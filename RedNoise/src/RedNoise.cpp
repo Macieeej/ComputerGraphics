@@ -3,11 +3,51 @@
 #include <Utils.h>
 #include <fstream>
 #include <vector>
+#include <glm/glm.hpp>
 
 #define WIDTH 320
 #define HEIGHT 240
 
-void draw(DrawingWindow &window) {
+std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
+    std::vector<float> array;
+
+    float increment = (to-from)/(numberOfValues-1);
+
+    array.push_back(from);
+    float prev = from;
+
+    for (int i=1; i<numberOfValues; i++) {
+        array.push_back(prev+increment);
+        prev += increment;
+    }
+
+    return array;
+}
+
+std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues) {
+    std::vector<glm::vec3> array;
+
+    float increment0 = (to[0]-from[0])/(numberOfValues-1);
+    float increment1 = (to[1]-from[1])/(numberOfValues-1);
+    float increment2 = (to[2]-from[2])/(numberOfValues-1);
+
+    array.push_back(from);
+
+    float prev0 = from[0];
+    float prev1 = from[1];
+    float prev2 = from[2];
+
+    for (int i=1; i<numberOfValues; i++) {
+        array.push_back(glm::vec3(prev0 + increment0, prev1 + increment1, prev2 + increment2));
+        prev0 += increment0;
+        prev1 += increment1;
+        prev2 += increment2;
+    }
+
+    return array;
+}
+
+void drawRedNoise(DrawingWindow &window) {
 	window.clearPixels();
 	for (size_t y = 0; y < window.height; y++) {
 		for (size_t x = 0; x < window.width; x++) {
@@ -18,6 +58,23 @@ void draw(DrawingWindow &window) {
 			window.setPixelColour(x, y, colour);
 		}
 	}
+}
+
+void drawGreyScale(DrawingWindow &window) {
+    window.clearPixels();
+    for (size_t y = 0; y < window.height; y++) {
+
+        std::vector<float> result;
+        result = interpolateSingleFloats(255, 0, window.width);
+
+        for (size_t x = 0; x < window.width; x++) {
+            float red = result[x];
+            float green = result[x];
+            float blue = result[x];
+            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+            window.setPixelColour(x, y, colour);
+        }
+    }
 }
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
@@ -33,13 +90,35 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 }
 
 int main(int argc, char *argv[]) {
-	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
+
+    // Test interpolateSingleFloats
+    std::vector<float> result;
+    result = interpolateSingleFloats(2.2, 8.5, 7);
+    for(size_t i=0; i<result.size(); i++) std::cout << result[i] << " ";
+    std::cout << std::endl;
+
+    // Test interpolateThreeElementValues
+    std::vector<glm::vec3> result3;
+    result3 = interpolateThreeElementValues(glm::vec3(1.0, 4.0, 9.2), glm::vec3(4.0, 1.0, 9.8), 4);
+    for(size_t i=0; i<result3.size(); i++){
+
+        std::cout << "(" << result3[i][0] << ", " << result3[i][1] << ", " << result3[i][2] << ")";
+        std::cout << std::endl;
+    }
+
+	DrawingWindow window = DrawingWindow(WIDTH*2, HEIGHT*2, false);
 	SDL_Event event;
-	while (true) {
-		// We MUST poll for events - otherwise the window will freeze !
-		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		draw(window);
-		// Need to render the frame at the end, or nothing actually gets shown on the screen !
-		window.renderFrame();
-	}
+
+    while (true) {
+    // We MUST poll for events - otherwise the window will freeze !
+    if (window.pollForInputEvents(event)) handleEvent(event, window);
+
+    drawGreyScale(window);
+
+    // drawRedNoise(window);
+
+    // Need to render the frame at the end, or nothing actually gets shown on the screen !
+    window.renderFrame();
+    }
+
 }
