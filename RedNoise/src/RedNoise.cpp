@@ -77,6 +77,35 @@ void drawGreyScale(DrawingWindow &window) {
     }
 }
 
+void draw2DColour(DrawingWindow &window) {
+    window.clearPixels();
+
+    glm::vec3 topLeft(255, 0, 0);        // red
+    glm::vec3 topRight(0, 0, 255);       // blue
+    glm::vec3 bottomRight(0, 255, 0);    // green
+    glm::vec3 bottomLeft(255, 255, 0);   // yellow
+
+    std::vector<glm::vec3> result_r_y;
+    std::vector<glm::vec3> result_b_g;
+
+    result_r_y = interpolateThreeElementValues(glm::vec3(255, 0, 0), glm::vec3(255, 255, 0), window.height);
+    result_b_g = interpolateThreeElementValues(glm::vec3(0, 0, 255), glm::vec3(0, 255, 0), window.height);
+
+    for (size_t y = 0; y < window.height; y++) {
+
+        std::vector<glm::vec3> result_left_right;
+        result_left_right = interpolateThreeElementValues(result_r_y[y], result_b_g[y], window.width);
+
+        for (size_t x = 0; x < window.width; x++) {
+            float red = result_left_right[x][0];
+            float green = result_left_right[x][1];
+            float blue = result_left_right[x][2];
+            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+            window.setPixelColour(x, y, colour);
+        }
+    }
+}
+
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
 		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
@@ -99,7 +128,7 @@ int main(int argc, char *argv[]) {
 
     // Test interpolateThreeElementValues
     std::vector<glm::vec3> result3;
-    result3 = interpolateThreeElementValues(glm::vec3(1.0, 4.0, 9.2), glm::vec3(4.0, 1.0, 9.8), 4);
+    result3 = interpolateThreeElementValues(glm::vec3(0, 0, 255), glm::vec3(0, 255, 0), 4);
     for(size_t i=0; i<result3.size(); i++){
 
         std::cout << "(" << result3[i][0] << ", " << result3[i][1] << ", " << result3[i][2] << ")";
@@ -113,7 +142,9 @@ int main(int argc, char *argv[]) {
     // We MUST poll for events - otherwise the window will freeze !
     if (window.pollForInputEvents(event)) handleEvent(event, window);
 
-    drawGreyScale(window);
+    draw2DColour(window);
+
+    // drawGreyScale(window);
 
     // drawRedNoise(window);
 
