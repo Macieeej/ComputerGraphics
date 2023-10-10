@@ -4,9 +4,13 @@
 #include <fstream>
 #include <vector>
 #include <glm/glm.hpp>
+#include <CanvasPoint.h>
+#include <Colour.h>
+#include <CanvasTriangle.h>
 
-#define WIDTH 320
-#define HEIGHT 240
+
+#define WIDTH 320*2
+#define HEIGHT 240*2
 
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
@@ -106,12 +110,62 @@ void draw2DColour(DrawingWindow &window) {
     }
 }
 
+
+void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
+    //window.clearPixels();
+    float toX = to.x;
+    float toY = to.y;
+    float fromX = from.x;
+    float fromY = from.y;
+
+    float xDiff = toX - fromX;
+    float yDiff = toY - fromY;
+    float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
+    float xStepSize = xDiff / numberOfSteps;
+    float yStepSize = yDiff / numberOfSteps;
+    for (float i = 0.0; i < numberOfSteps; i++) {
+        float x = fromX + (xStepSize * i);
+        float y = fromY + (yStepSize * i);
+
+        float red = colour_class.red;
+        float green = colour_class.green;
+        float blue = colour_class.blue;
+
+        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+        window.setPixelColour(round(x), round(y), colour);
+    }
+}
+
+
+void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
+    //window.clearPixels();
+
+    draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
+    draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
+    draw2DLine(window, CanvasPoint(triangle[2].x, triangle[2].y), CanvasPoint(triangle[0].x, triangle[0].y), colour_class);
+
+}
+
+
+
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
 		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
 		else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
 		else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
 		else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
+        else if (event.key.keysym.sym == SDLK_u) {
+            std::cout << "u" << std::endl;
+
+            CanvasPoint p1 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+            CanvasPoint p2 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+            CanvasPoint p3 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+
+            Colour colour = Colour(rand()%256, rand()%256, rand()%256);
+
+            drawTriangle(window, CanvasTriangle(p1, p2, p3), colour);
+
+        }
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
 		window.saveBMP("output.bmp");
@@ -135,14 +189,19 @@ int main(int argc, char *argv[]) {
         std::cout << std::endl;
     }
 
-	DrawingWindow window = DrawingWindow(WIDTH*2, HEIGHT*2, false);
+	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 
     while (true) {
     // We MUST poll for events - otherwise the window will freeze !
     if (window.pollForInputEvents(event)) handleEvent(event, window);
 
-    draw2DColour(window);
+    // draw2DLine(window, CanvasPoint(0,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
+    // draw2DLine(window, CanvasPoint(WIDTH,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
+    // draw2DLine(window, CanvasPoint(WIDTH/2,0), CanvasPoint(WIDTH/2,HEIGHT), Colour(255,255,255));
+    // draw2DLine(window, CanvasPoint(WIDTH/3,HEIGHT/2), CanvasPoint(WIDTH*2/3,HEIGHT/2), Colour(255,255,255));
+
+    // draw2DColour(window);
 
     // drawGreyScale(window);
 
