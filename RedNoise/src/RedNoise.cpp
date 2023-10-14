@@ -9,8 +9,8 @@
 #include <CanvasTriangle.h>
 
 
-#define WIDTH 320*2
-#define HEIGHT 240*2
+#define WIDTH 320*4
+#define HEIGHT 240*4
 
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
@@ -138,7 +138,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
 
 
 void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
-    //window.clearPixels();
+
 
     draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
     draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
@@ -146,6 +146,28 @@ void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_
 
 }
 
+
+void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
+
+    Colour white = Colour(255, 255, 255);
+    drawTriangle(window, triangle, white);
+
+    CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
+    CanvasPoint p1 = CanvasPoint(triangle[1].x, triangle[1].y);
+    CanvasPoint p2 = CanvasPoint(triangle[2].x, triangle[2].y);
+
+    // sort the points from top to bottom
+    if (p0.y > p2.y) std::swap(p0, p2);
+    if (p0.y > p1.y) std::swap(p0, p1);
+    if (p1.y > p2.y) std::swap(p1, p2);
+
+    float pE_x = p0.x - ((p2.x-p0.x)*(p0.y-p1.y))/(p2.y-p0.y);
+
+    CanvasPoint pE = CanvasPoint(pE_x, p1.y);
+
+    draw2DLine(window, CanvasPoint(p1.x, p1.y), CanvasPoint(pE.x, pE.y), colour_class);
+
+}
 
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
@@ -164,6 +186,18 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             Colour colour = Colour(rand()%256, rand()%256, rand()%256);
 
             drawTriangle(window, CanvasTriangle(p1, p2, p3), colour);
+
+        }
+        else if (event.key.keysym.sym == SDLK_f) {
+            std::cout << "f" << std::endl;
+
+            CanvasPoint p1 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+            CanvasPoint p2 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+            CanvasPoint p3 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
+
+            Colour colour = Colour(rand()%256, rand()%256, rand()%256);
+
+            drawFilledTriangle(window, CanvasTriangle(p1, p2, p3), colour);
 
         }
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
