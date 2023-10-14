@@ -167,6 +167,8 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     draw2DLine(window, CanvasPoint(p1.x, p1.y), CanvasPoint(pE.x, pE.y), colour_class);
 
+
+
 }
 
 
