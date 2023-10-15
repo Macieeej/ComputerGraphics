@@ -112,7 +112,6 @@ void draw2DColour(DrawingWindow &window) {
 
 
 void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
-    //window.clearPixels();
     float toX = to.x;
     float toY = to.y;
     float fromX = from.x;
@@ -136,15 +135,41 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     }
 }
 
+std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to) {
+
+    std::vector<CanvasPoint> result;
+
+    float toX = to.x;
+    float toY = to.y;
+    float fromX = from.x;
+    float fromY = from.y;
+
+    float xDiff = toX - fromX;
+    float yDiff = toY - fromY;
+    float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
+    float xStepSize = xDiff / numberOfSteps;
+    float yStepSize = yDiff / numberOfSteps;
+    std::cout << "number of steps: " << numberOfSteps << std::endl;
+    for (float i = 0.0; i < numberOfSteps; i++) {
+        float x = fromX + (xStepSize * i);
+        float y = fromY + (yStepSize * i);
+
+        result.push_back(CanvasPoint(x, y));
+
+    }
+
+
+    return result;
+}
 
 void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
-
 
     draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
     draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
     draw2DLine(window, CanvasPoint(triangle[2].x, triangle[2].y), CanvasPoint(triangle[0].x, triangle[0].y), colour_class);
-
 }
+
+
 
 
 void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
@@ -153,19 +178,65 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     drawTriangle(window, triangle, white);
 
     CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
-    CanvasPoint p1 = CanvasPoint(triangle[1].x, triangle[1].y);
+    CanvasPoint pL = CanvasPoint(triangle[1].x, triangle[1].y);
     CanvasPoint p2 = CanvasPoint(triangle[2].x, triangle[2].y);
 
     // sort the points from top to bottom
     if (p0.y > p2.y) std::swap(p0, p2);
-    if (p0.y > p1.y) std::swap(p0, p1);
-    if (p1.y > p2.y) std::swap(p1, p2);
+    if (p0.y > pL.y) std::swap(p0, pL);
+    if (pL.y > p2.y) std::swap(pL, p2);
 
-    float pE_x = p0.x - ((p2.x-p0.x)*(p0.y-p1.y))/(p2.y-p0.y);
+    float pR_x = p0.x - ((p2.x-p0.x)*(p0.y-pL.y))/(p2.y-p0.y);
 
-    CanvasPoint pE = CanvasPoint(pE_x, p1.y);
+    CanvasPoint pR = CanvasPoint(pR_x, pL.y);
 
-    draw2DLine(window, CanvasPoint(p1.x, p1.y), CanvasPoint(pE.x, pE.y), colour_class);
+    if (pL.x > pR.x) std::swap(pL, pR);
+
+    std::cout << "p0: " << p0.x << " " << p0.y << std::endl;
+    std::cout << "pL: " << pL.x << " " << pL.y << std::endl;
+    std::cout << "pR: " << pR.x << " " << pR.y << std::endl;
+    std::cout << "p2: " << p2.x << " " << p2.y << std::endl;
+
+    draw2DLine(window, CanvasPoint(pL.x, pL.y), CanvasPoint(pR.x, pR.y), colour_class);
+
+
+    // Interpolate p0 and pE
+    std::vector<CanvasPoint> p0_pR = Array_2DLine(window, p0, pR);
+
+
+    // Interpolate p0 and p1
+    std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
+
+    std::cout << "p0_pR: " << p0_pR[0].x << " " << p0_pR[0].y << std::endl;
+    std::cout << "p0_pL: " << p0_pL[0].x << " " << p0_pL[0].y << std::endl;
+    std::cout << "p0_pR 1 : " << p0_pR[1].x << " " << p0_pR[1].y << std::endl;
+    std::cout << "p0_pL 1 : " << p0_pL[1].x << " " << p0_pL[1].y << std::endl;
+
+    int arrayLength = p0.y - pL.y;
+
+    int j = 0;
+    int jj = 0;
+
+    for (float i = p0.y; i < pL.y ; i++) {
+        std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
+        std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
+        std::cout << "iteration: " << i << std::endl;
+        while (p0_pL[j].y < i && i<pL.y) {
+            j++;
+            std::cout << "while L: " << j << " " <<  p0_pL[j].y<< std::endl;
+
+        }
+        while (p0_pR[jj].y < i && i<pL.y) {
+            jj++;
+            std::cout << "while R " << jj << " " << p0_pR[jj].y << std::endl;
+
+        }
+        if (round((int)p0_pL[j].y) == i && round((int)p0_pR[jj].y) == i) {
+            draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
+
+        }
+
+    }
 
 
 
