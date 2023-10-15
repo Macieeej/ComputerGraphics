@@ -175,7 +175,7 @@ void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_
 void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
 
     Colour white = Colour(255, 255, 255);
-    drawTriangle(window, triangle, white);
+    //drawTriangle(window, triangle, white);
 
     CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
     CanvasPoint pL = CanvasPoint(triangle[1].x, triangle[1].y);
@@ -199,10 +199,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     draw2DLine(window, CanvasPoint(pL.x, pL.y), CanvasPoint(pR.x, pR.y), colour_class);
 
+    //TOP HALF TRIANGLE
 
     // Interpolate p0 and pE
     std::vector<CanvasPoint> p0_pR = Array_2DLine(window, p0, pR);
-
 
     // Interpolate p0 and p1
     std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
@@ -239,7 +239,37 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     }
 
 
+    // BOTTOM HALF TRIANGLE
 
+    // Interpolate pR and p2
+    std::vector<CanvasPoint> pR_p2 = Array_2DLine(window, pR, p2);
+
+    // Interpolate pL and p2
+    std::vector<CanvasPoint> pL_p2 = Array_2DLine(window, pL, p2);
+
+    arrayLength = pL.y - p2.y;
+
+    j = 0;
+    jj = 0;
+
+    for (float i = pL.y; i < p2.y ; i++) {
+
+        while (pL_p2[j].y < i && i<p2.y) {
+            j++;
+
+        }
+        while (pR_p2[jj].y < i && i<p2.y) {
+            jj++;
+
+        }
+        if (round((int)pL_p2[j].y) == i && round((int)pR_p2[jj].y) == i) {
+            draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
+
+        }
+
+    }
+
+    drawTriangle(window, triangle, white);
 }
 
 
