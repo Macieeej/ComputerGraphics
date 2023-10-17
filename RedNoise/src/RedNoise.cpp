@@ -6,11 +6,14 @@
 #include <glm/glm.hpp>
 #include <CanvasPoint.h>
 #include <Colour.h>
-#include <CanvasTriangle.h>
-
+#include <ModelTriangle.h>
+#include <TextureMap.h>
+#include <Utils.h>
+#include <map>
 
 #define WIDTH 320*4
 #define HEIGHT 240*4
+std::vector<Colour> colourPalette;
 
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
@@ -273,6 +276,87 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 }
 
 
+/*void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriangle textureTriangle) {
+
+    TextureMap texture = TextureMap("texture.ppm");
+
+    std::vector<std::vector<TexturePoint>> textureArray;
+
+    //CanvasPoint textureArray[texture.width][texture.height];
+
+    for (int i=0; i<texture.width; i++) {
+        std::vector<TexturePoint> row;
+        for (int j=0; j<texture.height; j++) {
+            row.push_back(CanvasPoint(i, j));
+            //textureArray[i][j] = texture.pixels[i+j*texture.width];
+        }
+    }
+
+}*/
+
+// Load cornell-box.mtl and populate colourPaletteMap global variable
+void loadMtlFile(DrawingWindow &window) {
+    std::ifstream file("cornell-box.mtl");
+    std::string str;
+    while (std::getline(file, str)) {
+        std::vector<std::string> strings = split(str, ' ');
+        if (strings[0]=="newmtl") {
+            std::string colourName = strings[1];
+            std::getline(file, str);
+            std::vector<std::string> strings2 = split(str, ' ');
+            std::string colourString = strings2[1];
+            std::vector<std::string> colourStrings = split(colourString, '/');
+            //Colour colour = Colour(std::stoi(colourStrings[0]), std::stoi(colourStrings[1]), std::stoi(colourStrings[2]));
+            int r = std::stoi(colourStrings[0])*255;
+            int g = std::stoi(colourStrings[1])*255;
+            int b = std::stoi(colourStrings[2])*255;
+            colourPalette.push_back(Colour(colourName, r, g, b));
+        }
+    }
+    /*
+    // Get an iterator pointing to the first element in the map
+    std::map<std::string, <glm::vec3>>::iterator it = colourPaletteMap.begin();
+
+    // Iterate through the map and print the elements
+    while (it != colourPaletteMap.end())
+    {
+        std::cout << "Key: " << it->first << ", Value: " << it->second << std::endl;
+        ++it;
+    }*/
+}
+
+// Load cornell-box.obj and read the vertices and faces
+void loadObjFile(DrawingWindow &window) {
+
+    std::ifstream file("cornell-box.obj");
+    std::string str;
+    std::vector<ModelTriangle> faces;
+    std::vector<glm::vec3> vertices;
+
+    while (std::getline(file, str)) {
+
+        //std::cout << str << std::endl;
+        std::vector<std::string> strings = split(str, ' ');
+
+        if (strings[0]=="v") {
+            vertices.push_back(glm::vec3(std::stof(strings[1])*0.35, std::stof(strings[2])*0.35, std::stof(strings[3])*0.35));
+            std::cout << vertices[0][0] << std::endl;
+        }
+        if (strings[0]=="f") {
+            ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], Colour(255, 255, 255));
+            faces.push_back(triangle);
+            //std::cout << faces[0].vertices[0][0] << std::endl;
+        }
+    }
+    int i=0;
+    for (ModelTriangle triangle : faces) {
+        std::cout << "Triangle: " << i << std::endl;
+        std::cout << triangle << std::endl;
+        i++;
+    }
+}
+
+
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
 		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
@@ -302,6 +386,9 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 
             drawFilledTriangle(window, CanvasTriangle(p1, p2, p3), colour);
 
+        } else if (event.key.keysym.sym == SDLK_l) {
+            //loadMtlFile(window);
+            loadObjFile(window);
         }
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
@@ -332,6 +419,20 @@ int main(int argc, char *argv[]) {
     while (true) {
     // We MUST poll for events - otherwise the window will freeze !
     if (window.pollForInputEvents(event)) handleEvent(event, window);
+
+    /*
+    // Texture mapping, visual verification
+    Colour white = Colour(255, 255, 255);
+    CanvasTriangle triangle = CanvasTriangle(CanvasPoint(160, 10), CanvasPoint(300, 230), CanvasPoint(10, 150));
+    drawTriangle(window, triangle, white);
+    //CanvasPoint p0 = CanvasPoint(195, 5);
+    //CanvasPoint p1 = CanvasPoint(395, 380);
+    //CanvasPoint p2 = CanvasPoint(65, 330);
+    CanvasTriangle textureTriangle = CanvasTriangle(CanvasPoint(195, 5), CanvasPoint(395, 380), CanvasPoint(65, 330));
+    drawTriangle(window, textureTriangle, white);
+    loadMapTexture(window, triangle, textureTriangle);
+     */
+
 
     // draw2DLine(window, CanvasPoint(0,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
     // draw2DLine(window, CanvasPoint(WIDTH,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
