@@ -212,28 +212,28 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     // Interpolate p0 and p1
     std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
 
-    std::cout << "p0_pR: " << p0_pR[0].x << " " << p0_pR[0].y << std::endl;
-    std::cout << "p0_pL: " << p0_pL[0].x << " " << p0_pL[0].y << std::endl;
-    std::cout << "p0_pR 1 : " << p0_pR[1].x << " " << p0_pR[1].y << std::endl;
-    std::cout << "p0_pL 1 : " << p0_pL[1].x << " " << p0_pL[1].y << std::endl;
+    //std::cout << "p0_pR: " << p0_pR[0].x << " " << p0_pR[0].y << std::endl;
+    //std::cout << "p0_pL: " << p0_pL[0].x << " " << p0_pL[0].y << std::endl;
+    //std::cout << "p0_pR 1 : " << p0_pR[1].x << " " << p0_pR[1].y << std::endl;
+    //std::cout << "p0_pL 1 : " << p0_pL[1].x << " " << p0_pL[1].y << std::endl;
 
-    int arrayLength = p0.y - pL.y;
+    //int arrayLength = p0.y - pR.y;
 
     int j = 0;
     int jj = 0;
 
-    for (float i = p0.y; i < pL.y ; i++) {
-        std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
-        std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
-        std::cout << "iteration: " << i << std::endl;
-        while (p0_pL[j].y < i && i<pL.y) {
+    for (float i = round((int)p0.y); i < round((int)pL.y) ; i++) {
+        //std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
+        //std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
+        //std::cout << "iteration: " << i << std::endl;
+        while (p0_pL[j].y < i && i<pR.y) {
             j++;
-            std::cout << "while L: " << j << " " <<  p0_pL[j].y<< std::endl;
+            //std::cout << "while L: " << j << " " <<  p0_pL[j].y<< std::endl;
 
         }
-        while (p0_pR[jj].y < i && i<pL.y) {
+        while (p0_pR[jj].y < i && i<pR.y) {
             jj++;
-            std::cout << "while R " << jj << " " << p0_pR[jj].y << std::endl;
+            //std::cout << "while R " << jj << " " << p0_pR[jj].y << std::endl;
 
         }
         if (round((int)p0_pL[j].y) == i && round((int)p0_pR[jj].y) == i) {
@@ -252,12 +252,12 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     // Interpolate pL and p2
     std::vector<CanvasPoint> pL_p2 = Array_2DLine(window, pL, p2);
 
-    arrayLength = pL.y - p2.y;
+    //arrayLength = pL.y - p2.y;
 
     j = 0;
     jj = 0;
 
-    for (float i = pL.y; i < p2.y ; i++) {
+    for (float i = round((int)pL.y); i < round((int)p2.y) ; i++) {
 
         while (pL_p2[j].y < i && i<p2.y) {
             j++;
@@ -274,7 +274,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     }
 
-    drawTriangle(window, triangle, white);
+    drawTriangle(window, triangle, colour_class);
 }
 
 
@@ -391,17 +391,18 @@ void loadObjFile(DrawingWindow &window) {
 
         uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
         window.setPixelColour(canvasPoint0[0], canvasPoint0[1], colour);
-        //std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
+        std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
         window.setPixelColour(canvasPoint1[0], canvasPoint1[1], colour);
-        //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
+        std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
         window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
-        //std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
+        std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
 
         CanvasPoint p0 = CanvasPoint(canvasPoint0[0], canvasPoint0[1]);
         CanvasPoint p1 = CanvasPoint(canvasPoint1[0], canvasPoint1[1]);
         CanvasPoint p2 = CanvasPoint(canvasPoint2[0], canvasPoint2[1]);
 
-        drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+        //drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+        drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
     }
 
 
@@ -439,6 +440,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             Colour colour = Colour(rand()%256, rand()%256, rand()%256);
 
             drawFilledTriangle(window, CanvasTriangle(p1, p2, p3), colour);
+            //drawFilledTriangle(window, CanvasTriangle(CanvasPoint(293.923, 129.97), CanvasPoint(348.677, 119.33), CanvasPoint(291.411, 119.33)), colour);
+
 
         } else if (event.key.keysym.sym == SDLK_l) {
             loadMtlFile(window);
