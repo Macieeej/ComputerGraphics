@@ -305,8 +305,8 @@ glm::vec2 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexP
     //vertexPosFromCamera.y = vertexPosition.y - cameraPosition.y;
     //vertexPosFromCamera.z = vertexPosition.z - cameraPosition.z;
 
-    glm::vec3 vertexPosFromCamera = cameraPosition - vertexPosition;
-    float ui = ((focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*240+WIDTH/2;
+    glm::vec3 vertexPosFromCamera = vertexPosition - cameraPosition;
+    float ui = (-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*240+WIDTH/2;
     float vi = ((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*240+HEIGHT/2;
 
     return glm::vec2(ui, vi);
@@ -322,9 +322,9 @@ void loadMtlFile(DrawingWindow &window) {
             std::string colourName = strings[1];
             std::getline(file, str);
             std::vector<std::string> colourStrings = split(str, ' ');
-            int r = std::stoi(colourStrings[1])*255;
-            int g = std::stoi(colourStrings[2])*255;
-            int b = std::stoi(colourStrings[3])*255;
+            int r = std::stof(colourStrings[1])*255;
+            int g = std::stof(colourStrings[2])*255;
+            int b = std::stof(colourStrings[3])*255;
             colourPaletteMap[colourName] = Colour(colourName, r, g, b);
         }
     }
@@ -396,6 +396,12 @@ void loadObjFile(DrawingWindow &window) {
         //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
         window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
         //std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
+
+        CanvasPoint p0 = CanvasPoint(canvasPoint0[0], canvasPoint0[1]);
+        CanvasPoint p1 = CanvasPoint(canvasPoint1[0], canvasPoint1[1]);
+        CanvasPoint p2 = CanvasPoint(canvasPoint2[0], canvasPoint2[1]);
+
+        drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
     }
 
 
