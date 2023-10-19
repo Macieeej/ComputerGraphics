@@ -11,8 +11,8 @@
 #include <Utils.h>
 #include <map>
 
-#define WIDTH 320*4
-#define HEIGHT 240*4
+#define WIDTH 320*2
+#define HEIGHT 240*2
 
 std::map<std::string, Colour> colourPaletteMap;
 
@@ -296,6 +296,22 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
 }*/
 
+glm::vec2 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
+
+    //float centreDistanceFromCamera = sqrt(cameraPosition.x**2 + cameraPosition.y**2 + cameraPosition.z**2);
+    //float vertexDistanceFromCamera = sqrt((vertexPosition.x-cameraPosition.x)**2 + (vertexPosition.y-cameraPosition.y)**2 + (vertexPosition.z-cameraPosition.z)**2);
+
+    //vertexPosFromCamera.x = vertexPosition.x - cameraPosition.x;
+    //vertexPosFromCamera.y = vertexPosition.y - cameraPosition.y;
+    //vertexPosFromCamera.z = vertexPosition.z - cameraPosition.z;
+
+    glm::vec3 vertexPosFromCamera = cameraPosition - vertexPosition;
+    float ui = ((focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*240+WIDTH/2;
+    float vi = ((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*240+HEIGHT/2;
+
+    return glm::vec2(ui, vi);
+}
+
 // Load cornell-box.mtl and populate colourPaletteMap global variable
 void loadMtlFile(DrawingWindow &window) {
     std::ifstream file("cornell-box.mtl");
@@ -362,6 +378,30 @@ void loadObjFile(DrawingWindow &window) {
         std::cout << triangle << std::endl;
         i++;
     }
+
+    for (ModelTriangle triangle : faces) {
+        Colour white = Colour(255, 255, 255);
+        glm::vec2 canvasPoint0 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[0], 2);
+        glm::vec2 canvasPoint1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
+        glm::vec2 canvasPoint2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
+
+        float red = triangle.colour.red;
+        float green = triangle.colour.green;
+        float blue = triangle.colour.blue;
+
+        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+        window.setPixelColour(canvasPoint0[0], canvasPoint0[1], colour);
+        //std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
+        window.setPixelColour(canvasPoint1[0], canvasPoint1[1], colour);
+        //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
+        window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
+        //std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
+    }
+
+
+
+
+
 }
 
 
