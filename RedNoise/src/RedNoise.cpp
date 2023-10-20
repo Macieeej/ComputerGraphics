@@ -11,11 +11,12 @@
 #include <Utils.h>
 #include <map>
 
-#define WIDTH 320*2
-#define HEIGHT 240*2
+#define WIDTH 320*4
+#define HEIGHT 240*4
+#define IMAGEPLANE 360
 
 std::map<std::string, Colour> colourPaletteMap;
-
+float depthsArray[IMAGEPLANE+HEIGHT][IMAGEPLANE+WIDTH] = {0};
 
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
@@ -154,7 +155,7 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
     float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
     float xStepSize = xDiff / numberOfSteps;
     float yStepSize = yDiff / numberOfSteps;
-    std::cout << "number of steps: " << numberOfSteps << std::endl;
+    //std::cout << "number of steps: " << numberOfSteps << std::endl;
     for (float i = 0.0; i < numberOfSteps; i++) {
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
@@ -197,10 +198,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     if (pL.x > pR.x) std::swap(pL, pR);
 
-    std::cout << "p0: " << p0.x << " " << p0.y << std::endl;
-    std::cout << "pL: " << pL.x << " " << pL.y << std::endl;
-    std::cout << "pR: " << pR.x << " " << pR.y << std::endl;
-    std::cout << "p2: " << p2.x << " " << p2.y << std::endl;
+    //std::cout << "p0: " << p0.x << " " << p0.y << std::endl;
+    //std::cout << "pL: " << pL.x << " " << pL.y << std::endl;
+    //std::cout << "pR: " << pR.x << " " << pR.y << std::endl;
+    //std::cout << "p2: " << p2.x << " " << p2.y << std::endl;
 
     draw2DLine(window, CanvasPoint(pL.x, pL.y), CanvasPoint(pR.x, pR.y), colour_class);
 
@@ -296,7 +297,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
 }*/
 
-glm::vec2 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
+CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
 
     //float centreDistanceFromCamera = sqrt(cameraPosition.x**2 + cameraPosition.y**2 + cameraPosition.z**2);
     //float vertexDistanceFromCamera = sqrt((vertexPosition.x-cameraPosition.x)**2 + (vertexPosition.y-cameraPosition.y)**2 + (vertexPosition.z-cameraPosition.z)**2);
@@ -306,10 +307,17 @@ glm::vec2 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexP
     //vertexPosFromCamera.z = vertexPosition.z - cameraPosition.z;
 
     glm::vec3 vertexPosFromCamera = vertexPosition - cameraPosition;
-    float ui = (-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*240+WIDTH/2;
-    float vi = ((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*240+HEIGHT/2;
+    float ui = round((-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*IMAGEPLANE+WIDTH/2);
+    float vi = round(((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*IMAGEPLANE+HEIGHT/2);
+    float depth = 1/vertexPosFromCamera.z;
+    //std::cout << ui << " " << vi << std::endl;
 
-    return glm::vec2(ui, vi);
+    if(depth > depthsArray[(int)ui][(int)vi]) {
+        depthsArray[(int)ui][(int)vi] = depth;
+    }
+
+
+    return CanvasPoint(ui, vi, depth);
 }
 
 // Load cornell-box.mtl and populate colourPaletteMap global variable
@@ -380,26 +388,25 @@ void loadObjFile(DrawingWindow &window) {
     }
 
     for (ModelTriangle triangle : faces) {
-        Colour white = Colour(255, 255, 255);
-        glm::vec2 canvasPoint0 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[0], 2);
-        glm::vec2 canvasPoint1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
-        glm::vec2 canvasPoint2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
+        CanvasPoint p0 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[0], 2);
+        CanvasPoint p1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
+        CanvasPoint p2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
 
-        float red = triangle.colour.red;
-        float green = triangle.colour.green;
-        float blue = triangle.colour.blue;
+        //float red = triangle.colour.red;
+        //float green = triangle.colour.green;
+        //float blue = triangle.colour.blue;
+        //Colour white = Colour(255, 255, 255);
+        //uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+        //window.setPixelColour(canvasPoint0[0], canvasPoint0[1], colour);
+        //std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
+        //window.setPixelColour(canvasPoint1[0], canvasPoint1[1], colour);
+        //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
+        //window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
+        //std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
 
-        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-        window.setPixelColour(canvasPoint0[0], canvasPoint0[1], colour);
-        std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
-        window.setPixelColour(canvasPoint1[0], canvasPoint1[1], colour);
-        std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
-        window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
-        std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
-
-        CanvasPoint p0 = CanvasPoint(canvasPoint0[0], canvasPoint0[1]);
-        CanvasPoint p1 = CanvasPoint(canvasPoint1[0], canvasPoint1[1]);
-        CanvasPoint p2 = CanvasPoint(canvasPoint2[0], canvasPoint2[1]);
+        //CanvasPoint p0 = CanvasPoint(canvasPoint0.x, canvasPoint0.y);
+        //CanvasPoint p1 = CanvasPoint(canvasPoint1.x, canvasPoint1.y);
+        //CanvasPoint p2 = CanvasPoint(canvasPoint2.x, canvasPoint2.y);
 
         //drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
