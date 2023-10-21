@@ -118,6 +118,12 @@ void draw2DColour(DrawingWindow &window) {
 
 
 void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
+
+    bool hasDepth = false;
+    if (from.depth) {
+        hasDepth = true;
+    }
+
     float toX = to.x;
     float toY = to.y;
     float fromX = from.x;
@@ -128,6 +134,15 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
     float xStepSize = xDiff / numberOfSteps;
     float yStepSize = yDiff / numberOfSteps;
+
+    std::vector<float> depths;
+    if (hasDepth) {
+        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps);
+    }
+
+    //std::cout << "Depth starts at: " << depths[0] << " ends at: " << depths[numberOfSteps-1] << std::endl;
+    //std::cout << "Depth Array starts at: " << depthsArray[(int)floor(fromX)][(int)floor(fromY)] << " ends at: " << depthsArray[(int)floor(toX)][(int)floor(toY)] << std::endl;
+
     for (float i = 0.0; i < numberOfSteps; i++) {
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
@@ -135,13 +150,26 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
         float red = colour_class.red;
         float green = colour_class.green;
         float blue = colour_class.blue;
-
         uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-        window.setPixelColour(round(x), round(y), colour);
+
+        if (hasDepth) {
+            float depth = depths[i];
+            if(depth > depthsArray[(int)floor(x)][(int)floor(y)] || depthsArray[(int)floor(x)][(int)floor(y)] == 0) {
+                depthsArray[(int)floor(x)][(int)floor(y)] = depth;
+                window.setPixelColour(floor(x), floor(y), colour);
+            }
+        } else {
+            window.setPixelColour(floor(x), floor(y), colour);
+        }
     }
 }
 
 std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to) {
+
+    bool hasDepth = false;
+    if (from.depth) {
+        hasDepth = true;
+    }
 
     std::vector<CanvasPoint> result;
 
@@ -155,12 +183,23 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
     float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
     float xStepSize = xDiff / numberOfSteps;
     float yStepSize = yDiff / numberOfSteps;
-    //std::cout << "number of steps: " << numberOfSteps << std::endl;
+
+    std::vector<float> depths;
+    if (hasDepth) {
+        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps);
+    }
+
+
     for (float i = 0.0; i < numberOfSteps; i++) {
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
 
-        result.push_back(CanvasPoint(x, y));
+        if (hasDepth) {
+            float depth = depths[i];
+            result.push_back(CanvasPoint(x, y, depth));
+        } else {
+            result.push_back(CanvasPoint(x, y));
+        }
 
     }
 
@@ -170,9 +209,12 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
 
 void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
 
-    draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
-    draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
-    draw2DLine(window, CanvasPoint(triangle[2].x, triangle[2].y), CanvasPoint(triangle[0].x, triangle[0].y), colour_class);
+    //draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
+    //draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
+    //draw2DLine(window, CanvasPoint(triangle[2].x, triangle[2].y), CanvasPoint(triangle[0].x, triangle[0].y), colour_class);
+    draw2DLine(window, triangle[0], triangle[1], colour_class);
+    draw2DLine(window, triangle[1], triangle[2], colour_class);
+    draw2DLine(window, triangle[2], triangle[0], colour_class);
 }
 
 
@@ -183,11 +225,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     bool hasDepth = false;
 
     if (triangle[0].depth) {
-        std::cout << "Has Depth" << std::endl;
         hasDepth = true;
-    } else {
-        std::cout << "No Depth" << std::endl;
     }
+
+    std::cout << "Triangle of colour: " << colour_class.name << std::endl;
 
     Colour white = Colour(255, 255, 255);
     //drawTriangle(window, triangle, white);
@@ -211,8 +252,19 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     CanvasPoint pR = CanvasPoint(pR_x, pL.y);
 
+    //float proportion = (pL.y-p0.y)/(p2.y-p0.y);
+
     if (hasDepth) {
-        pR.depth = interpolateSingleFloats(p0.depth, p2.depth, 3)[1];
+        //pR.depth = interpolateSingleFloats(p0.depth, p2.depth, 3)[1];
+        //int index = (int)floor(proportion*(floor(p2.y)-floor(p0.y)));
+        if (floor(pL.y)==floor(p2.y)) {
+            pR.depth = pL.depth;
+        } else {
+            int index = floor(pL.y)-floor(p0.y);
+            pR.depth = interpolateSingleFloats(p0.depth, p2.depth, floor(p2.y)-floor(p0.y))[index];
+            std::cout << "index: " << index << " for total of: " << floor(p2.y)-floor(p0.y) << std::endl;
+
+        }
     }
 
     if (pL.x > pR.x) std::swap(pL, pR);
@@ -242,6 +294,15 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     int j = 0;
     int jj = 0;
 
+    int idepths = 0;
+
+    std::vector<float> depthsL;
+    std::vector<float> depthsR;
+    if (hasDepth) {
+        depthsL = interpolateSingleFloats(p0.depth, pL.depth, floor(pL.y)-floor(p0.y));
+        depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y));
+    }
+
     for (float i = floor(p0.y); i < floor(pL.y) ; i++) {
         //std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
         //std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
@@ -257,9 +318,13 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
         }
         if (floor(p0_pL[j].y) == i && floor(p0_pR[jj].y) == i) {
-            draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
             //draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), floor(p0_pL[j].y)), CanvasPoint(floor(p0_pR[jj].x), floor(p0_pR[jj].y)), colour_class);
-
+            if (hasDepth) {
+                draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), i, depthsL[idepths]), CanvasPoint(floor(p0_pR[jj].x), i, depthsR[idepths]), colour_class);
+                idepths++;
+            } else {
+                draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
+            }
         }
 
     }
@@ -278,6 +343,14 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     j = 0;
     jj = 0;
 
+    idepths = 0;
+
+    //std::vector<float> depths;
+    if (hasDepth) {
+        depthsL = interpolateSingleFloats(pL.depth, p2.depth, floor(p2.y)-floor(pL.y));
+        depthsR = interpolateSingleFloats(pR.depth, p2.depth, floor(p2.y)-floor(pL.y));
+    }
+
     for (float i = floor(pL.y); i < floor(p2.y) ; i++) {
 
         while (pL_p2[j].y < i && i<p2.y) {
@@ -289,13 +362,19 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
         }
         if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
-            draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
+            //draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
+            if (hasDepth) {
+                draw2DLine(window, CanvasPoint(floor(pL_p2[j].x), i, depthsL[idepths]), CanvasPoint(floor(pR_p2[jj].x), i, depthsR[idepths]), colour_class);
+                idepths++;
+            } else {
+                draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
+            }
 
         }
 
     }
 
-    drawTriangle(window, triangle, colour_class);
+    //drawTriangle(window, triangle, colour_class);
 }
 
 
@@ -329,11 +408,11 @@ CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 verte
     glm::vec3 vertexPosFromCamera = vertexPosition - cameraPosition;
     float ui = round((-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*IMAGEPLANE+WIDTH/2);
     float vi = round(((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*IMAGEPLANE+HEIGHT/2);
-    float depth = 1/vertexPosFromCamera.z;
-    //std::cout << ui << " " << vi << std::endl;
+    float depth = -1/vertexPosFromCamera.z;
+    //std::cout << "vertexPosFromCamera.z: " << vertexPosFromCamera.z << depth << std::endl;
 
-    if(depth > depthsArray[(int)ui][(int)vi]) {
-        depthsArray[(int)ui][(int)vi] = depth;
+    if(depth > depthsArray[(int)floor(ui)][(int)floor(vi)]) {
+        depthsArray[(int)floor(ui)][(int)floor(vi)] = depth;
     }
 
 
