@@ -242,7 +242,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     int j = 0;
     int jj = 0;
 
-    for (float i = round((int)p0.y); i < round((int)pL.y) ; i++) {
+    for (float i = floor(p0.y); i < floor(pL.y) ; i++) {
         //std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
         //std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
         //std::cout << "iteration: " << i << std::endl;
@@ -256,7 +256,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             //std::cout << "while R " << jj << " " << p0_pR[jj].y << std::endl;
 
         }
-        if (round((int)p0_pL[j].y) == i && round((int)p0_pR[jj].y) == i) {
+        if (floor(p0_pL[j].y) == i && floor(p0_pR[jj].y) == i) {
             draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
             //draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), floor(p0_pL[j].y)), CanvasPoint(floor(p0_pR[jj].x), floor(p0_pR[jj].y)), colour_class);
 
@@ -278,7 +278,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     j = 0;
     jj = 0;
 
-    for (float i = round((int)pL.y); i < round((int)p2.y) ; i++) {
+    for (float i = floor(pL.y); i < floor(p2.y) ; i++) {
 
         while (pL_p2[j].y < i && i<p2.y) {
             j++;
@@ -288,7 +288,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             jj++;
 
         }
-        if (round((int)pL_p2[j].y) == i && round((int)pR_p2[jj].y) == i) {
+        if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
             draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
 
         }
