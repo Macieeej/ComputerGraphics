@@ -180,12 +180,27 @@ void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_
 
 void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
 
+    bool hasDepth = false;
+
+    if (triangle[0].depth) {
+        std::cout << "Has Depth" << std::endl;
+        hasDepth = true;
+    } else {
+        std::cout << "No Depth" << std::endl;
+    }
+
     Colour white = Colour(255, 255, 255);
     //drawTriangle(window, triangle, white);
 
     CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
     CanvasPoint pL = CanvasPoint(triangle[1].x, triangle[1].y);
     CanvasPoint p2 = CanvasPoint(triangle[2].x, triangle[2].y);
+
+    if (hasDepth) {
+        p0.depth = triangle[0].depth;
+        pL.depth = triangle[1].depth;
+        p2.depth = triangle[2].depth;
+    }
 
     // sort the points from top to bottom
     if (p0.y > p2.y) std::swap(p0, p2);
@@ -196,6 +211,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     CanvasPoint pR = CanvasPoint(pR_x, pL.y);
 
+    if (hasDepth) {
+        pR.depth = interpolateSingleFloats(p0.depth, p2.depth, 3)[1];
+    }
+
     if (pL.x > pR.x) std::swap(pL, pR);
 
     //std::cout << "p0: " << p0.x << " " << p0.y << std::endl;
@@ -203,7 +222,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     //std::cout << "pR: " << pR.x << " " << pR.y << std::endl;
     //std::cout << "p2: " << p2.x << " " << p2.y << std::endl;
 
-    draw2DLine(window, CanvasPoint(pL.x, pL.y), CanvasPoint(pR.x, pR.y), colour_class);
+    draw2DLine(window, pL, pR, colour_class);
 
     //TOP HALF TRIANGLE
 
@@ -239,6 +258,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         }
         if (round((int)p0_pL[j].y) == i && round((int)p0_pR[jj].y) == i) {
             draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
+            //draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), floor(p0_pL[j].y)), CanvasPoint(floor(p0_pR[jj].x), floor(p0_pR[jj].y)), colour_class);
 
         }
 
@@ -479,7 +499,6 @@ int main(int argc, char *argv[]) {
     }
 
     */
-
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 
