@@ -269,11 +269,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     if (pL.x > pR.x) std::swap(pL, pR);
 
-    //std::cout << "p0: " << p0.x << " " << p0.y << std::endl;
-    //std::cout << "pL: " << pL.x << " " << pL.y << std::endl;
-    //std::cout << "pR: " << pR.x << " " << pR.y << std::endl;
-    //std::cout << "p2: " << p2.x << " " << p2.y << std::endl;
-
     draw2DLine(window, pL, pR, colour_class);
 
     //TOP HALF TRIANGLE
@@ -283,13 +278,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     // Interpolate p0 and p1
     std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
-
-    //std::cout << "p0_pR: " << p0_pR[0].x << " " << p0_pR[0].y << std::endl;
-    //std::cout << "p0_pL: " << p0_pL[0].x << " " << p0_pL[0].y << std::endl;
-    //std::cout << "p0_pR 1 : " << p0_pR[1].x << " " << p0_pR[1].y << std::endl;
-    //std::cout << "p0_pL 1 : " << p0_pL[1].x << " " << p0_pL[1].y << std::endl;
-
-    //int arrayLength = p0.y - pR.y;
 
     int j = 0;
     int jj = 0;
@@ -303,24 +291,17 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y));
     }
 
-    for (float i = floor(p0.y); i < floor(pL.y) ; i++) {
-        //std::cout << "p0_pL : " << p0_pL[j].x << " " << p0_pL[j].y << std::endl;
-        //std::cout << "p0_pR : " << p0_pR[jj].x << " " << p0_pR[jj].y << std::endl;
-        //std::cout << "iteration: " << i << std::endl;
-        while (p0_pL[j].y < i && i<pR.y) {
+    for (float i = floor(p0.y); i < round(pL.y) ; i++) {
+        while (p0_pL[j].y < i) {
             j++;
-            //std::cout << "while L: " << j << " " <<  p0_pL[j].y<< std::endl;
-
         }
-        while (p0_pR[jj].y < i && i<pR.y) {
+        while (p0_pR[jj].y < i) {
             jj++;
-            //std::cout << "while R " << jj << " " << p0_pR[jj].y << std::endl;
-
         }
         if (floor(p0_pL[j].y) == i && floor(p0_pR[jj].y) == i) {
             //draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), floor(p0_pL[j].y)), CanvasPoint(floor(p0_pR[jj].x), floor(p0_pR[jj].y)), colour_class);
             if (hasDepth) {
-                draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), i, depthsL[idepths]), CanvasPoint(floor(p0_pR[jj].x), i, depthsR[idepths]), colour_class);
+                draw2DLine(window, CanvasPoint((p0_pL[j].x), i, depthsL[idepths]), CanvasPoint((p0_pR[jj].x), i, depthsR[idepths]), colour_class);
                 idepths++;
             } else {
                 draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
@@ -353,13 +334,11 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     for (float i = floor(pL.y); i < floor(p2.y) ; i++) {
 
-        while (pL_p2[j].y < i && i<p2.y) {
+        while (pL_p2[j].y < i) {
             j++;
-
         }
-        while (pR_p2[jj].y < i && i<p2.y) {
+        while (pR_p2[jj].y < i) {
             jj++;
-
         }
         if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
             //draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
@@ -411,8 +390,8 @@ CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 verte
     float depth = -1/vertexPosFromCamera.z;
     //std::cout << "vertexPosFromCamera.z: " << vertexPosFromCamera.z << depth << std::endl;
 
-    if(depth > depthsArray[(int)floor(ui)][(int)floor(vi)]) {
-        depthsArray[(int)floor(ui)][(int)floor(vi)] = depth;
+    if(depth > depthsArray[(int)round(ui)][(int)round(vi)]) {
+        depthsArray[(int)round(ui)][(int)round(vi)] = depth;
     }
 
 
