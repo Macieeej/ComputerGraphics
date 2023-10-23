@@ -142,6 +142,9 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     }
 
     for (float i = 0.0; i < numberOfSteps; i++) {
+
+        //std::cout << i << std::endl;
+
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
 
@@ -150,9 +153,12 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
         float blue = colour_class.blue;
         uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
 
+
+
         if (hasDepth) {
             float depth = depths[i];
-            if(depth > depthsArray[(int)floor(x)][(int)floor(y)] || depthsArray[(int)floor(x)][(int)floor(y)] == 0) {
+
+            if(depth >= depthsArray[(int)floor(x)][(int)floor(y)] || depthsArray[(int)floor(x)][(int)floor(y)] == 0) {
                 depthsArray[(int)floor(x)][(int)floor(y)] = depth;
                 window.setPixelColour(floor(x), floor(y), colour);
             }
@@ -160,6 +166,26 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
             window.setPixelColour(floor(x), floor(y), colour);
         }
     }
+
+    /*
+    float x = fromX + (xStepSize * numberOfSteps);
+    float y = fromY + (yStepSize * numberOfSteps);
+
+    float red = colour_class.red;
+    float green = colour_class.green;
+    float blue = colour_class.blue;
+    uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+
+    if (hasDepth) {
+        float depth = depths[numberOfSteps];
+        if(depth > depthCopy || depthCopy == 0) {
+            //depthsArray[(int)floor(x)][(int)floor(y)] = depth;
+            window.setPixelColour(floor(x), floor(y), colour);
+        }
+    } else {
+        window.setPixelColour(floor(x), floor(y), colour);
+    }
+    */
 
 }
 
@@ -376,8 +402,8 @@ CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 verte
     float vi = round(((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*IMAGEPLANE+HEIGHT/2);
     float depth = -1/vertexPosFromCamera.z;
 
-    if(depth > depthsArray[(int)round(ui)][(int)round(vi)]) {
-        depthsArray[(int)round(ui)][(int)round(vi)] = depth;
+    if(depth > depthsArray[(int)floor(ui)][(int)floor(vi)]) {
+        depthsArray[(int)floor(ui)][(int)floor(vi)] = depth;
     }
 
     return CanvasPoint(ui, vi, depth);
