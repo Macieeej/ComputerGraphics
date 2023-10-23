@@ -140,9 +140,6 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
         depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps);
     }
 
-    //std::cout << "Depth starts at: " << depths[0] << " ends at: " << depths[numberOfSteps-1] << std::endl;
-    //std::cout << "Depth Array starts at: " << depthsArray[(int)floor(fromX)][(int)floor(fromY)] << " ends at: " << depthsArray[(int)floor(toX)][(int)floor(toY)] << std::endl;
-
     for (float i = 0.0; i < numberOfSteps; i++) {
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
@@ -209,9 +206,6 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
 
 void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
 
-    //draw2DLine(window, CanvasPoint(triangle[0].x, triangle[0].y), CanvasPoint(triangle[1].x, triangle[1].y), colour_class);
-    //draw2DLine(window, CanvasPoint(triangle[1].x, triangle[1].y), CanvasPoint(triangle[2].x, triangle[2].y), colour_class);
-    //draw2DLine(window, CanvasPoint(triangle[2].x, triangle[2].y), CanvasPoint(triangle[0].x, triangle[0].y), colour_class);
     draw2DLine(window, triangle[0], triangle[1], colour_class);
     draw2DLine(window, triangle[1], triangle[2], colour_class);
     draw2DLine(window, triangle[2], triangle[0], colour_class);
@@ -230,7 +224,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     std::cout << "Triangle of colour: " << colour_class.name << std::endl;
 
-    Colour white = Colour(255, 255, 255);
+    //Colour white = Colour(255, 255, 255);
     //drawTriangle(window, triangle, white);
 
     CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
@@ -247,6 +241,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     if (p0.y > p2.y) std::swap(p0, p2);
     if (p0.y > pL.y) std::swap(p0, pL);
     if (pL.y > p2.y) std::swap(pL, p2);
+
 
     float pR_x = p0.x - ((p2.x-p0.x)*(p0.y-pL.y))/(p2.y-p0.y);
 
@@ -281,7 +276,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     int j = 0;
     int jj = 0;
-
     int idepths = 0;
 
     std::vector<float> depthsL;
@@ -323,10 +317,8 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     j = 0;
     jj = 0;
-
     idepths = 0;
 
-    //std::vector<float> depths;
     if (hasDepth) {
         depthsL = interpolateSingleFloats(pL.depth, p2.depth, floor(p2.y)-floor(pL.y));
         depthsR = interpolateSingleFloats(pR.depth, p2.depth, floor(p2.y)-floor(pL.y));
@@ -353,7 +345,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     }
 
-    //drawTriangle(window, triangle, colour_class);
+    drawTriangle(window, triangle, colour_class);
 }
 
 
@@ -377,23 +369,14 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
 CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
 
-    //float centreDistanceFromCamera = sqrt(cameraPosition.x**2 + cameraPosition.y**2 + cameraPosition.z**2);
-    //float vertexDistanceFromCamera = sqrt((vertexPosition.x-cameraPosition.x)**2 + (vertexPosition.y-cameraPosition.y)**2 + (vertexPosition.z-cameraPosition.z)**2);
-
-    //vertexPosFromCamera.x = vertexPosition.x - cameraPosition.x;
-    //vertexPosFromCamera.y = vertexPosition.y - cameraPosition.y;
-    //vertexPosFromCamera.z = vertexPosition.z - cameraPosition.z;
-
     glm::vec3 vertexPosFromCamera = vertexPosition - cameraPosition;
     float ui = round((-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*IMAGEPLANE+WIDTH/2);
     float vi = round(((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*IMAGEPLANE+HEIGHT/2);
     float depth = -1/vertexPosFromCamera.z;
-    //std::cout << "vertexPosFromCamera.z: " << vertexPosFromCamera.z << depth << std::endl;
 
     if(depth > depthsArray[(int)round(ui)][(int)round(vi)]) {
         depthsArray[(int)round(ui)][(int)round(vi)] = depth;
     }
-
 
     return CanvasPoint(ui, vi, depth);
 }
@@ -442,13 +425,10 @@ void loadObjFile(DrawingWindow &window) {
         std::vector<std::string> strings = split(str, ' ');
 
         if (strings[0]=="usemtl") {
-            //vertices.push_back(glm::vec3(std::stof(strings[1])*0.35, std::stof(strings[2])*0.35, std::stof(strings[3])*0.35));
-            //std::cout << vertices[0][0] << std::endl;
             currentColour = colourPaletteMap[strings[1]];
         }
         if (strings[0]=="v") {
             vertices.push_back(glm::vec3(std::stof(strings[1])*0.35, std::stof(strings[2])*0.35, std::stof(strings[3])*0.35));
-            //std::cout << vertices[0][0] << std::endl;
         }
         if (strings[0]=="f") {
             ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
@@ -470,23 +450,19 @@ void loadObjFile(DrawingWindow &window) {
         CanvasPoint p1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
         CanvasPoint p2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
 
-        //float red = triangle.colour.red;
-        //float green = triangle.colour.green;
-        //float blue = triangle.colour.blue;
-        //Colour white = Colour(255, 255, 255);
-        //uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-        //window.setPixelColour(canvasPoint0[0], canvasPoint0[1], colour);
+        float red = triangle.colour.red;
+        float green = triangle.colour.green;
+        float blue = triangle.colour.blue;
+        Colour white = Colour(255, 255, 255);
+        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+        window.setPixelColour(p0.x, p0.y, colour);
+        window.setPixelColour(p1.x, p1.y, colour);
+        window.setPixelColour(p2.x, p2.y, colour);
+
         //std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
-        //window.setPixelColour(canvasPoint1[0], canvasPoint1[1], colour);
         //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
-        //window.setPixelColour(canvasPoint2[0], canvasPoint2[1], colour);
         //std::cout << canvasPoint2[0] << " " << canvasPoint2[1] << std::endl;
 
-        //CanvasPoint p0 = CanvasPoint(canvasPoint0.x, canvasPoint0.y);
-        //CanvasPoint p1 = CanvasPoint(canvasPoint1.x, canvasPoint1.y);
-        //CanvasPoint p2 = CanvasPoint(canvasPoint2.x, canvasPoint2.y);
-
-        //drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
     }
 
