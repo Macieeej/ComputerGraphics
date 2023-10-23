@@ -10,7 +10,8 @@
 #include <TextureMap.h>
 #include <Utils.h>
 #include <map>
-
+#include <glm/gtx/string_cast.hpp>
+//std::cout << glm::to_string(myVector)
 #define WIDTH 320*4
 #define HEIGHT 240*4
 #define IMAGEPLANE 360
@@ -58,16 +59,16 @@ std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 t
 }
 
 void drawRedNoise(DrawingWindow &window) {
-	window.clearPixels();
-	for (size_t y = 0; y < window.height; y++) {
-		for (size_t x = 0; x < window.width; x++) {
-			float red = rand() % 256;
-			float green = 0.0;
-			float blue = 0.0;
-			uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-			window.setPixelColour(x, y, colour);
-		}
-	}
+    window.clearPixels();
+    for (size_t y = 0; y < window.height; y++) {
+        for (size_t x = 0; x < window.width; x++) {
+            float red = rand() % 256;
+            float green = 0.0;
+            float blue = 0.0;
+            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+            window.setPixelColour(x, y, colour);
+        }
+    }
 }
 
 void drawGreyScale(DrawingWindow &window) {
@@ -159,6 +160,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
             window.setPixelColour(floor(x), floor(y), colour);
         }
     }
+
 }
 
 std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to) {
@@ -450,14 +452,13 @@ void loadObjFile(DrawingWindow &window) {
         CanvasPoint p1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
         CanvasPoint p2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
 
-        float red = triangle.colour.red;
-        float green = triangle.colour.green;
-        float blue = triangle.colour.blue;
-        Colour white = Colour(255, 255, 255);
-        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-        window.setPixelColour(p0.x, p0.y, colour);
-        window.setPixelColour(p1.x, p1.y, colour);
-        window.setPixelColour(p2.x, p2.y, colour);
+        //float red = triangle.colour.red;
+        //float green = triangle.colour.green;
+        //float blue = triangle.colour.blue;
+        //uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+        //window.setPixelColour(p0.x, p0.y, colour);
+        //window.setPixelColour(p1.x, p1.y, colour);
+        //window.setPixelColour(p2.x, p2.y, colour);
 
         //std::cout << canvasPoint0[0] << " " << canvasPoint0[1] << std::endl;
         //std::cout << canvasPoint1[0] << " " << canvasPoint1[1] << std::endl;
@@ -474,11 +475,11 @@ void loadObjFile(DrawingWindow &window) {
 
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
-	if (event.type == SDL_KEYDOWN) {
-		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
-		else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
-		else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
-		else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
+        else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
+        else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
+        else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
         else if (event.key.keysym.sym == SDLK_u) {
             std::cout << "u" << std::endl;
 
@@ -508,10 +509,10 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             loadMtlFile(window);
             loadObjFile(window);
         }
-	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
-		window.savePPM("output.ppm");
-		window.saveBMP("output.bmp");
-	}
+    } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+        window.savePPM("output.ppm");
+        window.saveBMP("output.bmp");
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -533,41 +534,41 @@ int main(int argc, char *argv[]) {
     }
 
     */
-	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
-	SDL_Event event;
+    DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
+    SDL_Event event;
 
     while (true) {
-    // We MUST poll for events - otherwise the window will freeze !
-    if (window.pollForInputEvents(event)) handleEvent(event, window);
+        // We MUST poll for events - otherwise the window will freeze !
+        if (window.pollForInputEvents(event)) handleEvent(event, window);
 
 
-    /*
-    // Texture mapping, visual verification
-    Colour white = Colour(255, 255, 255);
-    CanvasTriangle triangle = CanvasTriangle(CanvasPoint(160, 10), CanvasPoint(300, 230), CanvasPoint(10, 150));
-    drawTriangle(window, triangle, white);
-    //CanvasPoint p0 = CanvasPoint(195, 5);
-    //CanvasPoint p1 = CanvasPoint(395, 380);
-    //CanvasPoint p2 = CanvasPoint(65, 330);
-    CanvasTriangle textureTriangle = CanvasTriangle(CanvasPoint(195, 5), CanvasPoint(395, 380), CanvasPoint(65, 330));
-    drawTriangle(window, textureTriangle, white);
-    loadMapTexture(window, triangle, textureTriangle);
-     */
+        /*
+        // Texture mapping, visual verification
+        Colour white = Colour(255, 255, 255);
+        CanvasTriangle triangle = CanvasTriangle(CanvasPoint(160, 10), CanvasPoint(300, 230), CanvasPoint(10, 150));
+        drawTriangle(window, triangle, white);
+        //CanvasPoint p0 = CanvasPoint(195, 5);
+        //CanvasPoint p1 = CanvasPoint(395, 380);
+        //CanvasPoint p2 = CanvasPoint(65, 330);
+        CanvasTriangle textureTriangle = CanvasTriangle(CanvasPoint(195, 5), CanvasPoint(395, 380), CanvasPoint(65, 330));
+        drawTriangle(window, textureTriangle, white);
+        loadMapTexture(window, triangle, textureTriangle);
+         */
 
 
-    // draw2DLine(window, CanvasPoint(0,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
-    // draw2DLine(window, CanvasPoint(WIDTH,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
-    // draw2DLine(window, CanvasPoint(WIDTH/2,0), CanvasPoint(WIDTH/2,HEIGHT), Colour(255,255,255));
-    // draw2DLine(window, CanvasPoint(WIDTH/3,HEIGHT/2), CanvasPoint(WIDTH*2/3,HEIGHT/2), Colour(255,255,255));
+        // draw2DLine(window, CanvasPoint(0,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
+        // draw2DLine(window, CanvasPoint(WIDTH,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
+        // draw2DLine(window, CanvasPoint(WIDTH/2,0), CanvasPoint(WIDTH/2,HEIGHT), Colour(255,255,255));
+        // draw2DLine(window, CanvasPoint(WIDTH/3,HEIGHT/2), CanvasPoint(WIDTH*2/3,HEIGHT/2), Colour(255,255,255));
 
-    // draw2DColour(window);
+        // draw2DColour(window);
 
-    // drawGreyScale(window);
+        // drawGreyScale(window);
 
-    // drawRedNoise(window);
+        // drawRedNoise(window);
 
-    // Need to render the frame at the end, or nothing actually gets shown on the screen !
-    window.renderFrame();
+        // Need to render the frame at the end, or nothing actually gets shown on the screen !
+        window.renderFrame();
     }
 
 }
