@@ -17,7 +17,10 @@
 #define IMAGEPLANE 360
 
 std::map<std::string, Colour> colourPaletteMap;
-float depthsArray[IMAGEPLANE+HEIGHT][IMAGEPLANE+WIDTH] = {0};
+std::vector<ModelTriangle> faces;
+glm::vec3 translate = glm::vec3(0, 0, 4);
+
+float depthsArray[IMAGEPLANE+HEIGHT+1][IMAGEPLANE+WIDTH+1] = {0};
 
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
@@ -135,35 +138,39 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     float numberOfSteps = std::max(abs(xDiff), abs(yDiff));
     float xStepSize = xDiff / numberOfSteps;
     float yStepSize = yDiff / numberOfSteps;
+    //std::cout << "numberOfSteps: " << numberOfSteps << std::endl;
 
     std::vector<float> depths;
     if (hasDepth) {
-        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps);
+        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps+1);
     }
 
-    for (float i = 0.0; i < numberOfSteps; i++) {
-
-        //std::cout << i << std::endl;
-
-        float x = fromX + (xStepSize * i);
-        float y = fromY + (yStepSize * i);
-
-        float red = colour_class.red;
-        float green = colour_class.green;
-        float blue = colour_class.blue;
-        uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+    if (numberOfSteps!=0) {
 
 
+        for (float i = 0.0; i <= numberOfSteps; i++) {
 
-        if (hasDepth) {
-            float depth = depths[i];
+            //std::cout << i << std::endl;
 
-            if(depth >= depthsArray[(int)floor(x)][(int)floor(y)] || depthsArray[(int)floor(x)][(int)floor(y)] == 0) {
-                depthsArray[(int)floor(x)][(int)floor(y)] = depth;
+            float x = fromX + (xStepSize * i);
+            float y = fromY + (yStepSize * i);
+
+            float red = colour_class.red;
+            float green = colour_class.green;
+            float blue = colour_class.blue;
+            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+
+
+            if (hasDepth) {
+                float depth = depths[i];
+
+                if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] || depthsArray[(int) floor(x)][(int) floor(y)] == 0) {
+                    depthsArray[(int) floor(x)][(int) floor(y)] = depth;
+                    window.setPixelColour(floor(x), floor(y), colour);
+                }
+            } else {
                 window.setPixelColour(floor(x), floor(y), colour);
             }
-        } else {
-            window.setPixelColour(floor(x), floor(y), colour);
         }
     }
 
@@ -211,11 +218,11 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
 
     std::vector<float> depths;
     if (hasDepth) {
-        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps);
+        depths = interpolateSingleFloats(from.depth, to.depth, numberOfSteps+1);
     }
 
 
-    for (float i = 0.0; i < numberOfSteps; i++) {
+    for (float i = 0.0; i <= numberOfSteps; i++) {
         float x = fromX + (xStepSize * i);
         float y = fromY + (yStepSize * i);
 
@@ -280,27 +287,30 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     if (hasDepth) {
         //pR.depth = interpolateSingleFloats(p0.depth, p2.depth, 3)[1];
         //int index = (int)floor(proportion*(floor(p2.y)-floor(p0.y)));
-        if (floor(pL.y)==floor(p2.y)) {
-            pR.depth = pL.depth;
-        } else {
+        //if (floor(pL.y)==floor(p2.y)) {
+        //    pR.depth = pL.depth;
+        //} else {
             int index = floor(pL.y)-floor(p0.y);
-            pR.depth = interpolateSingleFloats(p0.depth, p2.depth, floor(p2.y)-floor(p0.y))[index];
+            pR.depth = interpolateSingleFloats(p0.depth, p2.depth, floor(p2.y)-floor(p0.y)+1)[index];
             std::cout << "index: " << index << " for total of: " << floor(p2.y)-floor(p0.y) << std::endl;
-
-        }
+        //}
     }
 
     if (pL.x > pR.x) std::swap(pL, pR);
+    std::cout << "breakpoint 1" << std::endl;
 
     draw2DLine(window, pL, pR, colour_class);
+    std::cout << "breakpoint 2" << std::endl;
 
     //TOP HALF TRIANGLE
 
     // Interpolate p0 and pE
     std::vector<CanvasPoint> p0_pR = Array_2DLine(window, p0, pR);
+    std::cout << "breakpoint 3" << std::endl;
 
     // Interpolate p0 and p1
     std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
+    std::cout << "breakpoint 4" << std::endl;
 
     int j = 0;
     int jj = 0;
@@ -309,11 +319,15 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     std::vector<float> depthsL;
     std::vector<float> depthsR;
     if (hasDepth) {
-        depthsL = interpolateSingleFloats(p0.depth, pL.depth, floor(pL.y)-floor(p0.y));
-        depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y));
+        depthsL = interpolateSingleFloats(p0.depth, pL.depth, floor(pL.y)-floor(p0.y)+1);
+        std::cout << "breakpoint 5" << std::endl;
+        depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y)+1);
+        std::cout << "breakpoint 6" << std::endl;
     }
+    std::cout << "p0_pL[0] x: " << p0_pL[0].x << " y: " << p0_pL[0].y << std::endl;
+    std::cout << "p0_pR[0].y " << p0_pR[0].x << " y: " << p0_pR[0].y << std::endl;
 
-    for (float i = floor(p0.y); i < round(pL.y) ; i++) {
+    for (float i = floor(p0.y); i <= floor(pL.y); i++) {
         while (p0_pL[j].y < i) {
             j++;
         }
@@ -352,7 +366,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         depthsR = interpolateSingleFloats(pR.depth, p2.depth, floor(p2.y)-floor(pL.y));
     }
 
-    for (float i = floor(pL.y); i < floor(p2.y) ; i++) {
+    for (float i = floor(pL.y); i <= floor(p2.y); i++) {
 
         while (pL_p2[j].y < i) {
             j++;
@@ -363,7 +377,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
             //draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
             if (hasDepth) {
-                draw2DLine(window, CanvasPoint(floor(pL_p2[j].x), i, depthsL[idepths]), CanvasPoint(floor(pR_p2[jj].x), i, depthsR[idepths]), colour_class);
+                draw2DLine(window, CanvasPoint((pL_p2[j].x), i, depthsL[idepths]), CanvasPoint((pR_p2[jj].x), i, depthsR[idepths]), colour_class);
                 idepths++;
             } else {
                 draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
@@ -372,8 +386,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         }
 
     }
-
     drawTriangle(window, triangle, colour_class);
+
+    //drawTriangle(window, CanvasTriangle(CanvasPoint(p0.x, p0.y-1), CanvasPoint(pL.x-1, pL.y), CanvasPoint(pR.x+1, pR.y)), colour_class);
+    //drawTriangle(window, CanvasTriangle(CanvasPoint(pL.x-1, pL.y), CanvasPoint(pR.x+1, pR.y), CanvasPoint(p2.x, p2.y-1)), colour_class);
 }
 
 
@@ -411,6 +427,7 @@ CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 verte
 
 // Load cornell-box.mtl and populate colourPaletteMap global variable
 void loadMtlFile(DrawingWindow &window) {
+
     std::ifstream file("cornell-box.mtl");
     std::string str;
     while (std::getline(file, str)) {
@@ -440,9 +457,9 @@ void loadMtlFile(DrawingWindow &window) {
 // Load cornell-box.obj and read the vertices and faces
 void loadObjFile(DrawingWindow &window) {
 
+
     std::ifstream file("cornell-box.obj");
     std::string str;
-    std::vector<ModelTriangle> faces;
     std::vector<glm::vec3> vertices;
 
     Colour currentColour;
@@ -464,19 +481,27 @@ void loadObjFile(DrawingWindow &window) {
             //std::cout << faces[0].vertices[0][0] << std::endl;
         }
     }
-    std::cout << std::endl;
-    int i=0;
-    for (ModelTriangle triangle : faces) {
-        std::cout << "Triangle: " << i << std::endl;
-        std::cout << triangle.colour << std::endl;
-        std::cout << triangle << std::endl;
-        i++;
-    }
+
+    //std::cout << std::endl;
+    //int i=0;
+    //for (ModelTriangle triangle : faces) {
+    //    std::cout << "Triangle: " << i << std::endl;
+    //    std::cout << triangle.colour << std::endl;
+    //    std::cout << triangle << std::endl;
+    //    i++;
+    //}
+
+    //for (float *depth : depthsArray) {
+    //    *depth = 0;
+    //}
+    memset(depthsArray, 0, sizeof depthsArray);
+
+    //depthsArray[IMAGEPLANE+HEIGHT][IMAGEPLANE+WIDTH] = {0}
 
     for (ModelTriangle triangle : faces) {
-        CanvasPoint p0 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[0], 2);
-        CanvasPoint p1 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[1], 2);
-        CanvasPoint p2 = getCanvasIntersectionPoint(glm::vec3(0, 0, 4), triangle.vertices[2], 2);
+        CanvasPoint p0 = getCanvasIntersectionPoint(translate, triangle.vertices[0], 2);
+        CanvasPoint p1 = getCanvasIntersectionPoint(translate, triangle.vertices[1], 2);
+        CanvasPoint p2 = getCanvasIntersectionPoint(translate, triangle.vertices[2], 2);
 
         //float red = triangle.colour.red;
         //float green = triangle.colour.green;
@@ -506,6 +531,36 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
         else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
         else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
+        else if (event.key.keysym.sym == SDLK_w) {
+            translate[1]-=1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_s) {
+            translate[1]+=1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_a) {
+            translate[0]+=1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_d) {
+            translate[0]-=1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_q) {
+            translate[2] += 1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_e) {
+            translate[2]-=1;
+            window.clearPixels();
+            loadObjFile(window);
+        }
         else if (event.key.keysym.sym == SDLK_u) {
             std::cout << "u" << std::endl;
 
