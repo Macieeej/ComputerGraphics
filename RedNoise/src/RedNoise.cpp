@@ -514,9 +514,6 @@ void loadObjFile(DrawingWindow &window) {
      }*/
 
 
-
-
-
 }
 
 void drawCornellBox(DrawingWindow &window) {
