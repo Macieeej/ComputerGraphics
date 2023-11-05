@@ -503,8 +503,25 @@ void loadObjFile(DrawingWindow &window) {
         }
     }
 
-    memset(depthsArray, 0, sizeof depthsArray);
+    /* memset(depthsArray, 0, sizeof depthsArray);
 
+   for (ModelTriangle triangle : faces) {
+         CanvasPoint p0 = getCanvasIntersectionPoint(translate, triangle.vertices[0], 2);
+         CanvasPoint p1 = getCanvasIntersectionPoint(translate, triangle.vertices[1], 2);
+         CanvasPoint p2 = getCanvasIntersectionPoint(translate, triangle.vertices[2], 2);
+
+         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+     }*/
+
+
+
+
+
+}
+
+void drawCornellBox(DrawingWindow &window) {
+
+    memset(depthsArray, 0, sizeof depthsArray);
 
     for (ModelTriangle triangle : faces) {
         CanvasPoint p0 = getCanvasIntersectionPoint(translate, triangle.vertices[0], 2);
@@ -513,13 +530,20 @@ void loadObjFile(DrawingWindow &window) {
 
         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
     }
-
-
-
-
-
 }
 
+float cameraRadius = 4.0;  // Adjust the radius as needed
+float cameraSpeed = 0.05; // Adjust the speed of the orbit as needed
+float cameraAngle = 0.0;  // Initial angle
+
+void draw(DrawingWindow &window) {
+    cameraAngle += cameraSpeed;  // Increase the angle each frame
+    float cameraX = cameraRadius * sin(cameraAngle);
+    //float cameraZ = cameraRadius * cos(cameraAngle);
+    translate = glm::vec3(cameraX, 0.0, 8.0);
+    window.clearPixels();
+    drawCornellBox(window);
+}
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
     if (event.type == SDL_KEYDOWN) {
@@ -529,7 +553,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/4;
             setRotationAngle('x', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_RIGHT){
             std::cout << "RIGHT" << std::endl;
@@ -537,7 +561,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/4;
             setRotationAngle('x', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_UP){
             std::cout << "UP" << std::endl;
@@ -545,7 +569,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/4;
             setRotationAngle('y', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_DOWN){
             std::cout << "DOWN" << std::endl;
@@ -553,7 +577,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/4;
             setRotationAngle('y', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_t) {
             std::cout << "t" << std::endl;
@@ -561,7 +585,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/12;
             setOrientationAngle('y', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_g) {
             std::cout << "g" << std::endl;
@@ -569,7 +593,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/12;
             setOrientationAngle('y', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
@@ -577,7 +601,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/12;
             setOrientationAngle('x', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_h) {
             std::cout << "h" << std::endl;
@@ -585,45 +609,45 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/12;
             setOrientationAngle('x', angle);
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_w) {
             std::cout << "w" << std::endl;
 
             translate[1]-=1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_s) {
             std::cout << "s" << std::endl;
 
             translate[1]+=1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_a) {
             std::cout << "a" << std::endl;
 
             translate[0]+=1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_d) {
             std::cout << "d" << std::endl;
 
             translate[0]-=1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_q) {
             translate[2] += 1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_e) {
             translate[2]-=1;
             window.clearPixels();
-            loadObjFile(window);
+            drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_u) {
             std::cout << "u" << std::endl;
@@ -651,8 +675,9 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 
 
         } else if (event.key.keysym.sym == SDLK_l) {
-            loadMtlFile(window);
-            loadObjFile(window);
+            std::cout << "l" << std::endl;
+
+            drawCornellBox(window);
         }
     } else if (event.type == SDL_MOUSEBUTTONDOWN) {
         window.savePPM("output.ppm");
@@ -681,11 +706,13 @@ int main(int argc, char *argv[]) {
     */
     DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
     SDL_Event event;
+    loadMtlFile(window);
+    loadObjFile(window);
 
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
         if (window.pollForInputEvents(event)) handleEvent(event, window);
-
+        //draw(window);
 
         /*
         // Texture mapping, visual verification
