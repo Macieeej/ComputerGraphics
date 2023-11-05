@@ -16,7 +16,7 @@
   </component>
   <component name="CMakeSettings">
     <configurations>
-      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+      <configuration PROFILE_NAME="Debug" ENABLED="true" GENERATION_DIR="cmake-build-debug" CONFIG_NAME="Debug" />
     </configurations>
   </component>
   <component name="ChangeListManager">
@@ -24,11 +24,15 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/RedNoise.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/cmakeFiles-v1-ff747b220a25c15c043b.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/index-2023-10-23T18-20-33-0149.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/RedNoise.dir/src/RedNoise.cpp.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/RedNoise.dir/src/RedNoise.cpp.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/RedNoise" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/output.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/output.bmp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/output.ppm" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/output.ppm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/build.ninja" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/output.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/output.bmp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/output.ppm" beforeDir="false" afterPath="$PROJECT_DIR$/output.ppm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/RedNoise.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/RedNoise.cpp" afterDir="false" />
@@ -70,22 +74,31 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/maciej/Desktop/ComputerGraphics2023/ComputerGraphics/RedNoise&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/maciej/Desktop/ComputerGraphics2023/ComputerGraphics/RedNoise/cmake-build-debug&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/cmake-build-debug" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="RunManager">
     <configuration name="RedNoise" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RedNoise" TARGET_NAME="RedNoise" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="RedNoise" RUN_TARGET_NAME="RedNoise">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -103,7 +116,8 @@
       <workItem from="1698169290034" duration="2000" />
       <workItem from="1698244205720" duration="1907000" />
       <workItem from="1698247070346" duration="321000" />
-      <workItem from="1698414032056" duration="15449000" />
+      <workItem from="1698414032056" duration="18199000" />
+      <workItem from="1699207750205" duration="3601000" />
     </task>
     <servers />
   </component>

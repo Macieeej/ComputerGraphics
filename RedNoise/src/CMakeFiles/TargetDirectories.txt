@@ -1,0 +1,3 @@
+/home/maciej/Desktop/ComputerGraphics2023/ComputerGraphics/RedNoise/src/CMakeFiles/RedNoise.dir
+/home/maciej/Desktop/ComputerGraphics2023/ComputerGraphics/RedNoise/src/CMakeFiles/edit_cache.dir
+/home/maciej/Desktop/ComputerGraphics2023/ComputerGraphics/RedNoise/src/CMakeFiles/rebuild_cache.dir
