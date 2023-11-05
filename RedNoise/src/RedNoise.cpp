@@ -19,13 +19,13 @@
 #define HEIGHT 240*4
 #define IMAGEPLANE 360
 
-float angleX = 2*M_PI;
-float angleY = 2*M_PI;
-
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
+float depthsArray[IMAGEPLANE+HEIGHT+1][IMAGEPLANE+WIDTH+1] = {0};
 
 glm::vec3 translate = glm::vec3(0, 0, 4);
+float angleX = 2*M_PI;
+float angleY = 2*M_PI;
 glm::mat3 rotationY = glm::mat3(
         1.0, 0.0, 0.0,
         0.0, cos(angleY), -sin(angleY),
@@ -38,8 +38,37 @@ glm::mat3 rotationX = glm::mat3(
 );
 
 
-float depthsArray[IMAGEPLANE+HEIGHT+1][IMAGEPLANE+WIDTH+1] = {0};
+float orientationAngleX = 2*M_PI;
+float orientationAngleY = 2*M_PI;
+glm::mat3 orientationY = glm::mat3(
+        1.0, 0.0, 0.0,
+        0.0, cos(orientationAngleY), -sin(orientationAngleY),
+        0.0, sin(orientationAngleY), cos(orientationAngleY)
+);
+glm::mat3 orientationX = glm::mat3(
+        cos(orientationAngleX), 0.0, sin(orientationAngleX),
+        0.0, 1.0, 0.0,
+        -sin(orientationAngleX), 0.0, cos(orientationAngleX)
+);
 
+
+void setOrientationAngle(char axis, float angle) {
+    if (axis == 'x') {
+        orientationAngleX = orientationAngleX + angle;
+        orientationX = glm::mat3(
+                cos(orientationAngleX), 0.0, sin(orientationAngleX),
+                0.0, 1.0, 0.0,
+                -sin(orientationAngleX), 0.0, cos(orientationAngleX)
+        );
+    } else if (axis == 'y') {
+        orientationAngleY = orientationAngleY + angle;
+        orientationY = glm::mat3(
+                1.0, 0.0, 0.0,
+                0.0, cos(orientationAngleY), -sin(orientationAngleY),
+                0.0, sin(orientationAngleY), cos(orientationAngleY)
+        );
+    }
+}
 
 void setRotationAngle(char axis, float angle) {
     if (axis == 'x') {
@@ -157,7 +186,6 @@ void draw2DColour(DrawingWindow &window) {
     }
 }
 
-
 void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
 
     bool hasDepth = false;
@@ -258,8 +286,6 @@ void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_
     draw2DLine(window, triangle[1], triangle[2], colour_class);
     draw2DLine(window, triangle[2], triangle[0], colour_class);
 }
-
-
 
 
 void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
@@ -386,7 +412,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 }
 
 
-/*void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriangle textureTriangle) {
+void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriangle textureTriangle) {
 
     TextureMap texture = TextureMap("texture.ppm");
 
@@ -397,21 +423,23 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     for (int i=0; i<texture.width; i++) {
         std::vector<TexturePoint> row;
         for (int j=0; j<texture.height; j++) {
-            row.push_back(CanvasPoint(i, j));
+            //row.push_back(CanvasPoint(i, j));
             //textureArray[i][j] = texture.pixels[i+j*texture.width];
         }
     }
 
-}*/
+}
 
 CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
     vertexPosition = vertexPosition * rotationX * rotationY;
-    glm::vec3 vertexPosFromCamera = vertexPosition - cameraPosition;
+    glm::vec3 cameraToVertex = vertexPosition - cameraPosition;
 
-    glm::normalize(vertexPosFromCamera);
-    float ui = round((-(focalLength * vertexPosFromCamera.x) / vertexPosFromCamera.z)*IMAGEPLANE+WIDTH/2);
-    float vi = round(((focalLength * vertexPosFromCamera.y) / vertexPosFromCamera.z)*IMAGEPLANE+HEIGHT/2);
-    float depth = -1/vertexPosFromCamera.z;
+    cameraToVertex = cameraToVertex * orientationY * orientationX;
+
+    glm::normalize(cameraToVertex);
+    float ui = round((-(focalLength * cameraToVertex.x) / cameraToVertex.z)*IMAGEPLANE+WIDTH/2);
+    float vi = round(((focalLength * cameraToVertex.y) / cameraToVertex.z)*IMAGEPLANE+HEIGHT/2);
+    float depth = -1/cameraToVertex.z;
 
     if(depth > depthsArray[abs((int)floor(ui))][abs((int)floor(vi))]) {
         depthsArray[abs((int)floor(ui))][abs((int)floor(vi))] = depth;
@@ -527,22 +555,62 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             window.clearPixels();
             loadObjFile(window);
         }
+        else if (event.key.keysym.sym == SDLK_t) {
+            std::cout << "t" << std::endl;
+
+            float angle = -M_PI/12;
+            setOrientationAngle('y', angle);
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_g) {
+            std::cout << "g" << std::endl;
+
+            float angle = M_PI/12;
+            setOrientationAngle('y', angle);
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_f) {
+            std::cout << "f" << std::endl;
+
+            float angle = -M_PI/12;
+            setOrientationAngle('x', angle);
+            window.clearPixels();
+            loadObjFile(window);
+        }
+        else if (event.key.keysym.sym == SDLK_h) {
+            std::cout << "h" << std::endl;
+
+            float angle = M_PI/12;
+            setOrientationAngle('x', angle);
+            window.clearPixels();
+            loadObjFile(window);
+        }
         else if (event.key.keysym.sym == SDLK_w) {
+            std::cout << "w" << std::endl;
+
             translate[1]-=1;
             window.clearPixels();
             loadObjFile(window);
         }
         else if (event.key.keysym.sym == SDLK_s) {
+            std::cout << "s" << std::endl;
+
             translate[1]+=1;
             window.clearPixels();
             loadObjFile(window);
         }
         else if (event.key.keysym.sym == SDLK_a) {
+            std::cout << "a" << std::endl;
+
             translate[0]+=1;
             window.clearPixels();
             loadObjFile(window);
         }
         else if (event.key.keysym.sym == SDLK_d) {
+            std::cout << "d" << std::endl;
+
             translate[0]-=1;
             window.clearPixels();
             loadObjFile(window);
@@ -569,8 +637,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             drawTriangle(window, CanvasTriangle(p1, p2, p3), colour);
 
         }
-        else if (event.key.keysym.sym == SDLK_f) {
-            std::cout << "f" << std::endl;
+        else if (event.key.keysym.sym == SDLK_j) {
+            std::cout << "j" << std::endl;
 
             CanvasPoint p1 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             CanvasPoint p2 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
