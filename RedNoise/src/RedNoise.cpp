@@ -19,6 +19,8 @@
 #define HEIGHT 240*4
 #define IMAGEPLANE 360
 
+bool paused = false;
+
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[IMAGEPLANE+WIDTH+1][IMAGEPLANE+HEIGHT+1] = {0};
@@ -591,7 +593,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         if (event.key.keysym.sym == SDLK_LEFT){
             std::cout << "LEFT" << std::endl;
 
-            float angle = -M_PI/4;
+            float angle = -M_PI/6;
             setRotationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
@@ -599,7 +601,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_RIGHT){
             std::cout << "RIGHT" << std::endl;
 
-            float angle = M_PI/4;
+            float angle = M_PI/6;
             setRotationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
@@ -607,7 +609,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_UP){
             std::cout << "UP" << std::endl;
 
-            float angle = -M_PI/4;
+            float angle = -M_PI/6;
             setRotationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
@@ -615,7 +617,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_DOWN){
             std::cout << "DOWN" << std::endl;
 
-            float angle = M_PI/4;
+            float angle = M_PI/6;
             setRotationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
@@ -719,6 +721,14 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "l" << std::endl;
 
             drawCornellBox(window);
+        } else if (event.key.keysym.sym == SDLK_p) {
+            std::cout << "p" << std::endl;
+
+            if (paused) {
+                paused = false;
+            } else {
+                paused = true;
+            }
         }
     } else if (event.type == SDL_MOUSEBUTTONDOWN) {
         window.savePPM("output.ppm");
@@ -753,7 +763,9 @@ int main(int argc, char *argv[]) {
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
         if (window.pollForInputEvents(event)) handleEvent(event, window);
-        draw(window, event);
+        if (!paused) {
+            draw(window, event);
+        }
 
         /*
         // Texture mapping, visual verification
