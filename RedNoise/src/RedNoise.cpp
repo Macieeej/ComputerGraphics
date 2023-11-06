@@ -23,7 +23,7 @@ std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[IMAGEPLANE+WIDTH+1][IMAGEPLANE+HEIGHT+1] = {0};
 
-glm::vec3 translate = glm::vec3(0, 0, 8);
+glm::vec3 translate = glm::vec3(0, 0, 4);
 float angleX = 2*M_PI;
 float angleY = 2*M_PI;
 glm::mat3 rotationX = glm::mat3(
@@ -231,10 +231,10 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
             uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
 
 
-            if (hasDepth && x>=0 && y>=0 && x<IMAGEPLANE+WIDTH && y<IMAGEPLANE+HEIGHT) {
+            if (hasDepth && x>=0 && y>=0 && x<WIDTH && y<HEIGHT) {
                 float depth = depths[i];
 
-                if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] || depthsArray[(int) floor(x)][(int) floor(y)] == 0) {
+                if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] ) {
                     depthsArray[(int) floor(x)][(int) floor(y)] = depth;
                     window.setPixelColour(floor(x), floor(y), colour);
                 }
@@ -440,27 +440,22 @@ void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriang
 
 CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
     vertexPosition = vertexPosition * rotationX * rotationY;
-    cameraPosition = cameraPosition * positionY;
+    //cameraPosition = cameraPosition * positionY;
     glm::vec3 cameraToVertex = vertexPosition - cameraPosition;
 
     cameraToVertex = cameraToVertex * cameraOrientation;
     //cameraToVertex = cameraToVertex * orientationY * orientationX;
 
-    glm::normalize(cameraToVertex);
+    //cameraToVertex = glm::normalize(cameraToVertex);
     float ui = round((-(focalLength * cameraToVertex.x) / cameraToVertex.z)*IMAGEPLANE+WIDTH/2);
     float vi = round(((focalLength * cameraToVertex.y) / cameraToVertex.z)*IMAGEPLANE+HEIGHT/2);
     float depth = -1/cameraToVertex.z;
 
-    // ui - 1641
-    // vi - 1321
-    //std::cout << "ui: " << ui << std::endl;
-    //std::cout << "vi: " << vi << std::endl;
-
-    if (ui >= 0 && ui < IMAGEPLANE+WIDTH && vi >= 0 && vi < IMAGEPLANE+HEIGHT) {
-        if(depth >= depthsArray[((int)floor(ui))][((int)floor(vi))]) {
-            depthsArray[((int)floor(ui))][((int)floor(vi))] = depth;
-        }
-    }
+    //if (ui >= 0 && ui < WIDTH && vi >= 0 && vi < HEIGHT) {
+     //   if(depth >= depthsArray[((int)floor(ui))][((int)floor(vi))]) {
+    //        depthsArray[((int)floor(ui))][((int)floor(vi))] = depth;
+    //    }
+    //}
 
 
     return CanvasPoint(ui, vi, depth);
@@ -547,6 +542,13 @@ void drawCornellBox(DrawingWindow &window) {
     }
 }
 
+void lookAt(glm::vec3 target) {
+    glm::vec3 forward = glm::normalize(translate - target);
+    glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), forward));
+    glm::vec3 up = glm::cross(forward, right);
+
+    cameraOrientation = glm::mat3(right, up, forward);
+}
 
 //float cameraRadius = 4.0;  // Adjust the radius as needed
 float cameraSpeed = M_PI/36; // Adjust the speed of the orbit as needed
@@ -554,28 +556,31 @@ float cameraAngle = 0;  // Initial angle
 
 void draw(DrawingWindow &window, SDL_Event &event) {
 
-    sleep(1);
+    //sleep(1);
 
+    //lookAt(glm::vec3(0, 0, 0));
+    std::cout << glm::to_string(cameraOrientation) << std::endl;
 
-    cameraAngle += cameraSpeed;  // Increase the angle each frame
+    //cameraAngle += cameraSpeed;  // Increase the angle each frame
     if (cameraAngle >= 2*M_PI){
         std::cout << "FULL CIRCLE" << std::endl;
         // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger
         cameraAngle = 0;
-        translate = glm::vec3(0, 0, 4);
+        //translate = glm::vec3(0, 0, 4);
 
     } else {
-        cameraAngle = cameraAngle + cameraSpeed;
         positionY = glm::mat3(
                 cos(cameraAngle), 0.0, sin(cameraAngle),
                 0.0, 1.0, 0.0,
                 -sin(cameraAngle), 0.0, cos(cameraAngle)
         );
+        cameraAngle = cameraAngle + cameraSpeed;
 
         //float cameraX = cameraRadius * sin(cameraAngle);
         //float cameraZ = cameraRadius * cos(cameraAngle);
-        //translate = glm::vec3(cameraX, 0.0, cameraZ);
+        translate = glm::vec3(0, 0, 4) * positionY;
     }
+    lookAt(glm::vec3(0, 0, 0));
 
     window.clearPixels();
     drawCornellBox(window);
@@ -634,7 +639,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
 
-            float angle = -M_PI/12;
+            float angle = -M_PI/2;
             setOrientationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);

@@ -27,6 +27,8 @@
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/RedNoise" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/output.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/output.bmp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/output.ppm" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/output.ppm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/output.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/output.bmp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/output.ppm" beforeDir="false" afterPath="$PROJECT_DIR$/output.ppm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/RedNoise.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/RedNoise.cpp" afterDir="false" />
@@ -93,11 +95,6 @@
   </component>
   <component name="RunManager">
     <configuration name="RedNoise" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RedNoise" TARGET_NAME="RedNoise" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="RedNoise" RUN_TARGET_NAME="RedNoise">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
