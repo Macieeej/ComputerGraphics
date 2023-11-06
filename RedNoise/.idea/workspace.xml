@@ -21,6 +21,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564c0c4c-da72-473e-885c-6382b976cd88" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/RedNoise.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/RedNoise" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/output.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/output.bmp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/output.ppm" beforeDir="false" afterPath="$PROJECT_DIR$/output.ppm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/RedNoise.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/RedNoise.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

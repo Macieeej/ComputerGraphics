@@ -12,7 +12,7 @@
 #include <map>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include<unistd.h>
 //std::cout << glm::to_string(myVector)
 
 #define WIDTH 320*4
@@ -21,31 +21,38 @@
 
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
-float depthsArray[IMAGEPLANE+HEIGHT+1][IMAGEPLANE+WIDTH+1] = {0};
+float depthsArray[IMAGEPLANE+WIDTH+1][IMAGEPLANE+HEIGHT+1] = {0};
 
-glm::vec3 translate = glm::vec3(0, 0, 4);
+glm::vec3 translate = glm::vec3(0, 0, 8);
 float angleX = 2*M_PI;
 float angleY = 2*M_PI;
-glm::mat3 rotationY = glm::mat3(
+glm::mat3 rotationX = glm::mat3(
         1.0, 0.0, 0.0,
         0.0, cos(angleY), -sin(angleY),
         0.0, sin(angleY), cos(angleY)
 );
-glm::mat3 rotationX = glm::mat3(
+glm::mat3 rotationY = glm::mat3(
         cos(angleX), 0.0, sin(angleX),
         0.0, 1.0, 0.0,
         -sin(angleX), 0.0, cos(angleX)
 );
 
+glm::mat3 positionY = glm::mat3(
+        cos(angleX), 0.0, sin(angleX),
+        0.0, 1.0, 0.0,
+        -sin(angleX), 0.0, cos(angleX)
+);
 
 float orientationAngleX = 2*M_PI;
 float orientationAngleY = 2*M_PI;
-glm::mat3 orientationY = glm::mat3(
+
+glm::mat3 cameraOrientation;
+glm::mat3 orientationX = glm::mat3(
         1.0, 0.0, 0.0,
         0.0, cos(orientationAngleY), -sin(orientationAngleY),
         0.0, sin(orientationAngleY), cos(orientationAngleY)
 );
-glm::mat3 orientationX = glm::mat3(
+glm::mat3 orientationY = glm::mat3(
         cos(orientationAngleX), 0.0, sin(orientationAngleX),
         0.0, 1.0, 0.0,
         -sin(orientationAngleX), 0.0, cos(orientationAngleX)
@@ -53,37 +60,38 @@ glm::mat3 orientationX = glm::mat3(
 
 
 void setOrientationAngle(char axis, float angle) {
-    if (axis == 'x') {
-        orientationAngleX = orientationAngleX + angle;
-        orientationX = glm::mat3(
-                cos(orientationAngleX), 0.0, sin(orientationAngleX),
-                0.0, 1.0, 0.0,
-                -sin(orientationAngleX), 0.0, cos(orientationAngleX)
-        );
-    } else if (axis == 'y') {
+    if (axis == 'y') {
         orientationAngleY = orientationAngleY + angle;
         orientationY = glm::mat3(
+                cos(orientationAngleY), 0.0, sin(orientationAngleY),
+                0.0, 1.0, 0.0,
+                -sin(orientationAngleY), 0.0, cos(orientationAngleY)
+        );
+    } else if (axis == 'x') {
+        orientationAngleX = orientationAngleX + angle;
+        orientationX = glm::mat3(
                 1.0, 0.0, 0.0,
-                0.0, cos(orientationAngleY), -sin(orientationAngleY),
-                0.0, sin(orientationAngleY), cos(orientationAngleY)
+                0.0, cos(orientationAngleX), -sin(orientationAngleX),
+                0.0, sin(orientationAngleX), cos(orientationAngleX)
         );
     }
+    cameraOrientation = orientationY * orientationX;
 }
 
 void setRotationAngle(char axis, float angle) {
-    if (axis == 'x') {
-        angleX = angleX + angle;
-        rotationX = glm::mat3(
-                cos(angleX), 0.0, sin(angleX),
-                0.0, 1.0, 0.0,
-                -sin(angleX), 0.0, cos(angleX)
-        );
-    } else if (axis == 'y') {
+    if (axis == 'y') {
         angleY = angleY + angle;
         rotationY = glm::mat3(
+                cos(angleY), 0.0, sin(angleY),
+                0.0, 1.0, 0.0,
+                -sin(angleY), 0.0, cos(angleY)
+        );
+    } else if (axis == 'x') {
+        angleX = angleX + angle;
+        rotationX = glm::mat3(
                 1.0, 0.0, 0.0,
-                0.0, cos(angleY), -sin(angleY),
-                0.0, sin(angleY), cos(angleY)
+                0.0, cos(angleX), -sin(angleX),
+                0.0, sin(angleX), cos(angleX)
         );
     }
 }
@@ -223,7 +231,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
             uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
 
 
-            if (hasDepth) {
+            if (hasDepth && x>=0 && y>=0 && x<IMAGEPLANE+WIDTH && y<IMAGEPLANE+HEIGHT) {
                 float depth = depths[i];
 
                 if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] || depthsArray[(int) floor(x)][(int) floor(y)] == 0) {
@@ -231,7 +239,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
                     window.setPixelColour(floor(x), floor(y), colour);
                 }
             } else {
-                window.setPixelColour(floor(x), floor(y), colour);
+                //window.setPixelColour(floor(x), floor(y), colour);
             }
         }
     }
@@ -432,18 +440,28 @@ void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriang
 
 CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
     vertexPosition = vertexPosition * rotationX * rotationY;
+    cameraPosition = cameraPosition * positionY;
     glm::vec3 cameraToVertex = vertexPosition - cameraPosition;
 
-    cameraToVertex = cameraToVertex * orientationY * orientationX;
+    cameraToVertex = cameraToVertex * cameraOrientation;
+    //cameraToVertex = cameraToVertex * orientationY * orientationX;
 
     glm::normalize(cameraToVertex);
     float ui = round((-(focalLength * cameraToVertex.x) / cameraToVertex.z)*IMAGEPLANE+WIDTH/2);
     float vi = round(((focalLength * cameraToVertex.y) / cameraToVertex.z)*IMAGEPLANE+HEIGHT/2);
     float depth = -1/cameraToVertex.z;
 
-    if(depth > depthsArray[abs((int)floor(ui))][abs((int)floor(vi))]) {
-        depthsArray[abs((int)floor(ui))][abs((int)floor(vi))] = depth;
+    // ui - 1641
+    // vi - 1321
+    //std::cout << "ui: " << ui << std::endl;
+    //std::cout << "vi: " << vi << std::endl;
+
+    if (ui >= 0 && ui < IMAGEPLANE+WIDTH && vi >= 0 && vi < IMAGEPLANE+HEIGHT) {
+        if(depth >= depthsArray[((int)floor(ui))][((int)floor(vi))]) {
+            depthsArray[((int)floor(ui))][((int)floor(vi))] = depth;
+        }
     }
+
 
     return CanvasPoint(ui, vi, depth);
 }
@@ -529,15 +547,36 @@ void drawCornellBox(DrawingWindow &window) {
     }
 }
 
-float cameraRadius = 4.0;  // Adjust the radius as needed
-float cameraSpeed = 0.05; // Adjust the speed of the orbit as needed
-float cameraAngle = 0.0;  // Initial angle
 
-void draw(DrawingWindow &window) {
+//float cameraRadius = 4.0;  // Adjust the radius as needed
+float cameraSpeed = M_PI/36; // Adjust the speed of the orbit as needed
+float cameraAngle = 0;  // Initial angle
+
+void draw(DrawingWindow &window, SDL_Event &event) {
+
+    sleep(1);
+
+
     cameraAngle += cameraSpeed;  // Increase the angle each frame
-    float cameraX = cameraRadius * sin(cameraAngle);
-    //float cameraZ = cameraRadius * cos(cameraAngle);
-    translate = glm::vec3(cameraX, 0.0, 8.0);
+    if (cameraAngle >= 2*M_PI){
+        std::cout << "FULL CIRCLE" << std::endl;
+        // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger
+        cameraAngle = 0;
+        translate = glm::vec3(0, 0, 4);
+
+    } else {
+        cameraAngle = cameraAngle + cameraSpeed;
+        positionY = glm::mat3(
+                cos(cameraAngle), 0.0, sin(cameraAngle),
+                0.0, 1.0, 0.0,
+                -sin(cameraAngle), 0.0, cos(cameraAngle)
+        );
+
+        //float cameraX = cameraRadius * sin(cameraAngle);
+        //float cameraZ = cameraRadius * cos(cameraAngle);
+        //translate = glm::vec3(cameraX, 0.0, cameraZ);
+    }
+
     window.clearPixels();
     drawCornellBox(window);
 }
@@ -548,7 +587,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "LEFT" << std::endl;
 
             float angle = -M_PI/4;
-            setRotationAngle('x', angle);
+            setRotationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -556,7 +595,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "RIGHT" << std::endl;
 
             float angle = M_PI/4;
-            setRotationAngle('x', angle);
+            setRotationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -564,7 +603,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "UP" << std::endl;
 
             float angle = -M_PI/4;
-            setRotationAngle('y', angle);
+            setRotationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -572,7 +611,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "DOWN" << std::endl;
 
             float angle = M_PI/4;
-            setRotationAngle('y', angle);
+            setRotationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -580,7 +619,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "t" << std::endl;
 
             float angle = -M_PI/12;
-            setOrientationAngle('y', angle);
+            setOrientationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -588,7 +627,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "g" << std::endl;
 
             float angle = M_PI/12;
-            setOrientationAngle('y', angle);
+            setOrientationAngle('x', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -596,7 +635,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "f" << std::endl;
 
             float angle = -M_PI/12;
-            setOrientationAngle('x', angle);
+            setOrientationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -604,7 +643,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "h" << std::endl;
 
             float angle = M_PI/12;
-            setOrientationAngle('x', angle);
+            setOrientationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -709,7 +748,7 @@ int main(int argc, char *argv[]) {
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
         if (window.pollForInputEvents(event)) handleEvent(event, window);
-        //draw(window);
+        draw(window, event);
 
         /*
         // Texture mapping, visual verification
