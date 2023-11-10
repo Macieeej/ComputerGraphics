@@ -451,9 +451,12 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar,
 
     int i = 0;
     for (ModelTriangle triangle : faces) {
+        triangle.vertices[0] = triangle.vertices[0] * rotationX * rotationY;
+        triangle.vertices[1] = triangle.vertices[1] * rotationX * rotationY;
+        triangle.vertices[2] = triangle.vertices[2] * rotationX * rotationY;
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
-        glm::vec3 SPVector = cameraPosition - triangle.vertices[0];
+        glm::vec3 SPVector = cameraPositionVar - triangle.vertices[0];
         glm::mat3 DEMatrix(-rayDirection, e0, e1);
         glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 
@@ -477,11 +480,11 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar,
     i = 0;
 
     if (!possibleSolutions.empty()) {
-        float minDistance = std::numeric_limits<float>::max();
+        float minDistance = possibleSolutions[0].x;
         glm::vec3 closestPoint;
         int index = 0;
         for (glm::vec3 point : possibleSolutions) {
-            float distance = point.t;
+            float distance = point.x;
             if (distance < minDistance) {
                 minDistance = distance;
                 closestPoint = point;
@@ -684,7 +687,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/6;
             setRotationAngle('y', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_RIGHT){
             std::cout << "RIGHT" << std::endl;
@@ -692,7 +696,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/6;
             setRotationAngle('y', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_UP){
             std::cout << "UP" << std::endl;
@@ -700,7 +705,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/6;
             setRotationAngle('x', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_DOWN){
             std::cout << "DOWN" << std::endl;
@@ -708,7 +714,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/6;
             setRotationAngle('x', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_t) {
             std::cout << "t" << std::endl;
@@ -716,7 +723,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/12;
             setOrientationAngle('x', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_g) {
             std::cout << "g" << std::endl;
@@ -724,7 +732,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/12;
             setOrientationAngle('x', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
@@ -732,7 +741,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = -M_PI/12;
             setOrientationAngle('y', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_h) {
             std::cout << "h" << std::endl;
@@ -740,45 +750,52 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             float angle = M_PI/12;
             setOrientationAngle('y', angle);
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_w) {
             std::cout << "w" << std::endl;
 
             cameraPosition[1]-=1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_s) {
             std::cout << "s" << std::endl;
 
             cameraPosition[1]+=1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_a) {
             std::cout << "a" << std::endl;
 
             cameraPosition[0]+=1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_d) {
             std::cout << "d" << std::endl;
 
             cameraPosition[0]-=1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_q) {
             cameraPosition[2] += 1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_e) {
             cameraPosition[2]-=1;
             window.clearPixels();
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         }
         else if (event.key.keysym.sym == SDLK_u) {
             std::cout << "u" << std::endl;
@@ -808,7 +825,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         } else if (event.key.keysym.sym == SDLK_l) {
             std::cout << "l" << std::endl;
 
-            drawRasterisedScene(window);
+            //drawRasterisedScene(window);
+            drawRayTracedScene(window);
         } else if (event.key.keysym.sym == SDLK_p) {
             std::cout << "p" << std::endl;
 
