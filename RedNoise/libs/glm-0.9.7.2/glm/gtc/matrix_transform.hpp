@@ -74,15 +74,15 @@ namespace glm
 	/// #include <glm/glm.hpp>
 	/// #include <glm/gtc/matrix_transform.hpp>
 	/// ...
-	/// glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f));
+	/// glm::mat4 m = glm::cameraPosition(glm::mat4(1.0f), glm::vec3(1.0f));
 	/// // m[0][0] == 1.0f, m[0][1] == 0.0f, m[0][2] == 0.0f, m[0][3] == 0.0f
 	/// // m[1][0] == 0.0f, m[1][1] == 1.0f, m[1][2] == 0.0f, m[1][3] == 0.0f
 	/// // m[2][0] == 0.0f, m[2][1] == 0.0f, m[2][2] == 1.0f, m[2][3] == 0.0f
 	/// // m[3][0] == 1.0f, m[3][1] == 1.0f, m[3][2] == 1.0f, m[3][3] == 1.0f
 	/// @endcode
 	/// @see gtc_matrix_transform
-	/// @see - translate(tmat4x4<T, P> const & m, T x, T y, T z)
-	/// @see - translate(tvec3<T, P> const & v)
+	/// @see - cameraPosition(tmat4x4<T, P> const & m, T x, T y, T z)
+	/// @see - cameraPosition(tvec3<T, P> const & v)
 	template <typename T, precision P>
 	GLM_FUNC_DECL tmat4x4<T, P> translate(
 		tmat4x4<T, P> const & m,

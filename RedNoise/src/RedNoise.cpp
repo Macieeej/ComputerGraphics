@@ -13,21 +13,22 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include<unistd.h>
+#include "RayTriangleIntersection.h"
 //std::cout << glm::to_string(myVector)
 
 #define WIDTH 320*4
 #define HEIGHT 240*4
 #define IMAGEPLANE 360
 
-bool paused = false;
+bool paused = true;
 
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[IMAGEPLANE+WIDTH+1][IMAGEPLANE+HEIGHT+1] = {0};
 
-glm::vec3 translate = glm::vec3(0, 0, 4);
-float angleX = 2*M_PI;
-float angleY = 2*M_PI;
+glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
+float angleX = 0;
+float angleY = 0;
 glm::mat3 rotationX = glm::mat3(
         1.0, 0.0, 0.0,
         0.0, cos(angleY), -sin(angleY),
@@ -45,8 +46,8 @@ glm::mat3 positionY = glm::mat3(
         -sin(angleX), 0.0, cos(angleX)
 );
 
-float orientationAngleX = 2*M_PI;
-float orientationAngleY = 2*M_PI;
+float orientationAngleX = 0;
+float orientationAngleY = 0;
 
 glm::mat3 cameraOrientation;
 glm::mat3 orientationX = glm::mat3(
@@ -440,10 +441,66 @@ void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriang
 
 }
 
-CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength) {
+
+
+RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar, glm::vec3 rayDirection) {
+
+    std::vector<glm::vec3> possibleSolutions;
+    std::vector<ModelTriangle> intersectedTriangles;
+    std::vector<int> indexes;
+
+    int i = 0;
+    for (ModelTriangle triangle : faces) {
+        glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
+        glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
+        glm::vec3 SPVector = cameraPosition - triangle.vertices[0];
+        glm::mat3 DEMatrix(-rayDirection, e0, e1);
+        glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
+
+        float t = possibleSolution.x;
+        float u = possibleSolution.y;
+        float v = possibleSolution.z;
+
+        // Check if the intersection is within the triangle
+        if (u >= 0.0 && (u <= 1.0) && v >= 0.0 && (v <= 1.0) && (u + v) <= 1.0) {
+            // Check if the intersection is in the direction of the ray and not behind the camera
+            if (t > 0) {
+                //glm::vec3 intersectionPoint = rayOrigin + t * rayDirection;
+                possibleSolutions.push_back(possibleSolution);
+                indexes.push_back(i);
+                intersectedTriangles.push_back(triangle);
+            }
+        }
+        i++;
+    }
+
+    i = 0;
+
+    if (!possibleSolutions.empty()) {
+        float minDistance = std::numeric_limits<float>::max();
+        glm::vec3 closestPoint;
+        int index = 0;
+        for (glm::vec3 point : possibleSolutions) {
+            float distance = point.t;
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = point;
+                index = i;
+            }
+            i++;
+        }
+        RayTriangleIntersection intersection = RayTriangleIntersection(closestPoint, minDistance, intersectedTriangles[index], indexes[index]);
+        return intersection;
+    }
+
+    throw std::invalid_argument("no intersection found");
+    //return RayTriangleIntersection();
+}
+
+
+CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPositionVar, glm::vec3 vertexPosition, float focalLength) {
     vertexPosition = vertexPosition * rotationX * rotationY;
-    //cameraPosition = cameraPosition * positionY;
-    glm::vec3 cameraToVertex = vertexPosition - cameraPosition;
+    glm::vec3 cameraToVertex = vertexPosition - cameraPositionVar;
 
     cameraToVertex = cameraToVertex * cameraOrientation;
     //cameraToVertex = cameraToVertex * orientationY * orientationX;
@@ -521,9 +578,9 @@ void loadObjFile(DrawingWindow &window) {
     /* memset(depthsArray, 0, sizeof depthsArray);
 
    for (ModelTriangle triangle : faces) {
-         CanvasPoint p0 = getCanvasIntersectionPoint(translate, triangle.vertices[0], 2);
-         CanvasPoint p1 = getCanvasIntersectionPoint(translate, triangle.vertices[1], 2);
-         CanvasPoint p2 = getCanvasIntersectionPoint(translate, triangle.vertices[2], 2);
+         CanvasPoint p0 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[0], 2);
+         CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
+         CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
 
          drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
      }*/
@@ -536,16 +593,16 @@ void drawCornellBox(DrawingWindow &window) {
     memset(depthsArray, 0, sizeof depthsArray);
 
     for (ModelTriangle triangle : faces) {
-        CanvasPoint p0 = getCanvasIntersectionPoint(translate, triangle.vertices[0], 2);
-        CanvasPoint p1 = getCanvasIntersectionPoint(translate, triangle.vertices[1], 2);
-        CanvasPoint p2 = getCanvasIntersectionPoint(translate, triangle.vertices[2], 2);
+        CanvasPoint p0 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[0], 2);
+        CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
+        CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
 
         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
     }
 }
 
 void lookAt(glm::vec3 target) {
-    glm::vec3 forward = glm::normalize(translate - target);
+    glm::vec3 forward = glm::normalize(cameraPosition - target);
     glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), forward));
     glm::vec3 up = glm::cross(forward, right);
 
@@ -561,14 +618,14 @@ void draw(DrawingWindow &window, SDL_Event &event) {
     //sleep(1);
 
     //lookAt(glm::vec3(0, 0, 0));
-    std::cout << glm::to_string(cameraOrientation) << std::endl;
+    //std::cout << glm::to_string(cameraOrientation) << std::endl;
 
     //cameraAngle += cameraSpeed;  // Increase the angle each frame
     if (cameraAngle >= 2*M_PI){
         std::cout << "FULL CIRCLE" << std::endl;
         // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger
         cameraAngle = 0;
-        //translate = glm::vec3(0, 0, 4);
+        //cameraPosition = glm::vec3(0, 0, 4);
 
     } else {
         positionY = glm::mat3(
@@ -580,7 +637,7 @@ void draw(DrawingWindow &window, SDL_Event &event) {
 
         //float cameraX = cameraRadius * sin(cameraAngle);
         //float cameraZ = cameraRadius * cos(cameraAngle);
-        translate = glm::vec3(0, 0, 4) * positionY;
+        cameraPosition = glm::vec3(0, 0, 4) * positionY;
     }
     lookAt(glm::vec3(0, 0, 0));
 
@@ -641,7 +698,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
 
-            float angle = -M_PI/2;
+            float angle = -M_PI/12;
             setOrientationAngle('y', angle);
             window.clearPixels();
             drawCornellBox(window);
@@ -657,38 +714,38 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_w) {
             std::cout << "w" << std::endl;
 
-            translate[1]-=1;
+            cameraPosition[1]-=1;
             window.clearPixels();
             drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_s) {
             std::cout << "s" << std::endl;
 
-            translate[1]+=1;
+            cameraPosition[1]+=1;
             window.clearPixels();
             drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_a) {
             std::cout << "a" << std::endl;
 
-            translate[0]+=1;
+            cameraPosition[0]+=1;
             window.clearPixels();
             drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_d) {
             std::cout << "d" << std::endl;
 
-            translate[0]-=1;
+            cameraPosition[0]-=1;
             window.clearPixels();
             drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_q) {
-            translate[2] += 1;
+            cameraPosition[2] += 1;
             window.clearPixels();
             drawCornellBox(window);
         }
         else if (event.key.keysym.sym == SDLK_e) {
-            translate[2]-=1;
+            cameraPosition[2]-=1;
             window.clearPixels();
             drawCornellBox(window);
         }
@@ -759,6 +816,7 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     loadMtlFile(window);
     loadObjFile(window);
+    drawCornellBox(window);
 
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
@@ -766,7 +824,8 @@ int main(int argc, char *argv[]) {
         if (!paused) {
             draw(window, event);
         }
-
+        RayTriangleIntersection tr = getClosestValidIntersection(cameraPosition, glm::vec3(-0.2, 0, -1));
+        std::cout << tr.distanceFromCamera << std::endl;
         /*
         // Texture mapping, visual verification
         Colour white = Colour(255, 255, 255);
