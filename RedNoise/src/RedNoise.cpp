@@ -21,6 +21,7 @@
 #define IMAGEPLANE 240
 
 bool paused = true;
+int renderMode = 2;
 
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
@@ -48,7 +49,6 @@ glm::mat3 positionY = glm::mat3(
 
 float orientationAngleX = 0;
 float orientationAngleY = 0;
-
 glm::mat3 cameraOrientation;
 glm::mat3 orientationX = glm::mat3(
         1.0, 0.0, 0.0,
@@ -81,6 +81,7 @@ void setOrientationAngle(char axis, float angle) {
     cameraOrientation = orientationY * orientationX;
 }
 
+
 void setRotationAngle(char axis, float angle) {
     if (axis == 'y') {
         angleY = angleY + angle;
@@ -99,6 +100,7 @@ void setRotationAngle(char axis, float angle) {
     }
 }
 
+
 std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues) {
     std::vector<float> array;
 
@@ -114,6 +116,7 @@ std::vector<float> interpolateSingleFloats(float from, float to, int numberOfVal
 
     return array;
 }
+
 
 std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues) {
     std::vector<glm::vec3> array;
@@ -138,6 +141,7 @@ std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 t
     return array;
 }
 
+
 void drawRedNoise(DrawingWindow &window) {
     window.clearPixels();
     for (size_t y = 0; y < window.height; y++) {
@@ -150,6 +154,7 @@ void drawRedNoise(DrawingWindow &window) {
         }
     }
 }
+
 
 void drawGreyScale(DrawingWindow &window) {
     window.clearPixels();
@@ -167,6 +172,7 @@ void drawGreyScale(DrawingWindow &window) {
         }
     }
 }
+
 
 void draw2DColour(DrawingWindow &window) {
     window.clearPixels();
@@ -197,6 +203,7 @@ void draw2DColour(DrawingWindow &window) {
     }
 }
 
+
 void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
 
     bool hasDepth = false;
@@ -221,7 +228,6 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     }
 
     if (numberOfSteps!=0) {
-
 
         for (float i = 0.0; i <= numberOfSteps; i++) {
 
@@ -248,6 +254,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
     }
 
 }
+
 
 std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to) {
 
@@ -287,9 +294,9 @@ std::vector<CanvasPoint> Array_2DLine(DrawingWindow &window, CanvasPoint from, C
 
     }
 
-
     return result;
 }
+
 
 void drawTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_class) {
 
@@ -307,11 +314,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         hasDepth = true;
     }
 
-    //std::cout << "Triangle of colour: " << colour_class.name << std::endl;
-
-    //Colour white = Colour(255, 255, 255);
-    //drawTriangle(window, triangle, white);
-
     CanvasPoint p0 = CanvasPoint(triangle[0].x, triangle[0].y);
     CanvasPoint pL = CanvasPoint(triangle[1].x, triangle[1].y);
     CanvasPoint p2 = CanvasPoint(triangle[2].x, triangle[2].y);
@@ -327,11 +329,9 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     if (p0.y > pL.y) std::swap(p0, pL);
     if (pL.y > p2.y) std::swap(pL, p2);
 
-
     float pR_x = p0.x - ((p2.x-p0.x)*(p0.y-pL.y))/(p2.y-p0.y);
 
     CanvasPoint pR = CanvasPoint(pR_x, pL.y);
-
 
     if (hasDepth) {
         int index = floor(pL.y)-floor(p0.y);
@@ -369,7 +369,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             jj++;
         }
         if (floor(p0_pL[j].y) == i && floor(p0_pR[jj].y) == i) {
-            //draw2DLine(window, CanvasPoint(floor(p0_pL[j].x), floor(p0_pL[j].y)), CanvasPoint(floor(p0_pR[jj].x), floor(p0_pR[jj].y)), colour_class);
             if (hasDepth) {
                 draw2DLine(window, CanvasPoint((p0_pL[j].x), i, depthsL[idepths]), CanvasPoint((p0_pR[jj].x), i, depthsR[idepths]), colour_class);
                 idepths++;
@@ -377,7 +376,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
                 draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
             }
         }
-
     }
 
 
@@ -407,16 +405,13 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             jj++;
         }
         if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
-            //draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
             if (hasDepth) {
                 draw2DLine(window, CanvasPoint((pL_p2[j].x), i, depthsL[idepths]), CanvasPoint((pR_p2[jj].x), i, depthsR[idepths]), colour_class);
                 idepths++;
             } else {
                 draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
             }
-
         }
-
     }
     drawTriangle(window, triangle, colour_class);
 
@@ -440,7 +435,6 @@ void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriang
     }
 
 }
-
 
 
 RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm::vec3 rayDirection, ModelTriangle shootingTriangle, bool isEmptyTriangle) {
@@ -474,8 +468,6 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         if (u >= 0.0 && (u <= 1.0) && v >= 0.0 && (v <= 1.0) && (u + v) <= 1.0) {
             // Check if the intersection is in the direction of the ray and not behind the camera
             if (t > 0) {
-                //glm::vec3 intersectionPoint = rayOrigin + t * rayDirection;
-                //glm::vec3 posSolToCoord = triangle.vertices[0] + u * e0 + v * e1;
                 possibleSolutions.push_back(possibleSolution);
                 indexes.push_back(i);
                 intersectedTriangles.push_back(faces[i]);
@@ -519,8 +511,6 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         RayTriangleIntersection intersection = RayTriangleIntersection(posSolToCoord, minDistance, intersectedTriangles[index], indexes[index]);
         return intersection;
     }
-
-    //throw std::invalid_argument("no intersection found");
     return RayTriangleIntersection(glm::vec3(0, 0, 0), 0, ModelTriangle(), -1);
 }
 
@@ -536,6 +526,7 @@ CanvasPoint getCanvasIntersectionPoint(glm::vec3 cameraPositionVar, glm::vec3 ve
 
     return CanvasPoint(ui, vi, depth);
 }
+
 
 // Load cornell-box.mtl and populate colourPaletteMap global variable
 void loadMtlFile(DrawingWindow &window) {
@@ -566,9 +557,9 @@ void loadMtlFile(DrawingWindow &window) {
     }*/
 }
 
+
 // Load cornell-box.obj and read the vertices and faces
 void loadObjFile(DrawingWindow &window) {
-
 
     std::ifstream file("cornell-box.obj");
     std::string str;
@@ -592,18 +583,8 @@ void loadObjFile(DrawingWindow &window) {
         }
     }
 
-    /* memset(depthsArray, 0, sizeof depthsArray);
-
-   for (ModelTriangle triangle : faces) {
-         CanvasPoint p0 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[0], 2);
-         CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
-         CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
-
-         drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
-     }*/
-
-
 }
+
 
 void drawRasterisedScene(DrawingWindow &window) {
 
@@ -614,9 +595,15 @@ void drawRasterisedScene(DrawingWindow &window) {
         CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
         CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
 
-        drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+        if (renderMode == 1) {
+            drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+        } else if (renderMode==0) {
+            drawTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
+        }
+
     }
 }
+
 
 void lookAt(glm::vec3 target) {
     glm::vec3 forward = glm::normalize(cameraPosition - target);
@@ -625,6 +612,7 @@ void lookAt(glm::vec3 target) {
 
     cameraOrientation = glm::mat3(right, up, forward);
 }
+
 
 glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 
@@ -639,6 +627,7 @@ glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
     return rayDirFromCam;
 }
 
+
 glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0);
 
 void drawRayTracedScene(DrawingWindow &window) {
@@ -651,7 +640,6 @@ void drawRayTracedScene(DrawingWindow &window) {
 
             // Find the closest intersection
             ModelTriangle emptyTriangle = ModelTriangle();
-            //std::cout << emptyTriangle.vertices.empty() << std::endl;
             bool isEmptyTriangle = true;
             RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, emptyTriangle, isEmptyTriangle);
             if (intersection.triangleIndex!=-1) {
@@ -688,7 +676,6 @@ void drawRayTracedScene(DrawingWindow &window) {
                         window.setPixelColour(x, y, pixelColor);
                     }*/
                 }
-
             }
         }
     }
@@ -696,25 +683,27 @@ void drawRayTracedScene(DrawingWindow &window) {
 }
 
 
+void draw(DrawingWindow &window) {
+    window.clearPixels();
+    if (renderMode == 0) {
+        drawRasterisedScene(window);
+    } else if (renderMode == 1) {
+        drawRasterisedScene(window);
+    } else {
+        drawRayTracedScene(window);
+    }
+}
 
-//float cameraRadius = 4.0;  // Adjust the radius as needed
+
 float cameraSpeed = M_PI/36; // Adjust the speed of the orbit as needed
 float cameraAngle = 0;  // Initial angle
 
-void draw(DrawingWindow &window, SDL_Event &event) {
+void orbit(DrawingWindow &window, SDL_Event &event) {
 
-    //sleep(1);
-
-    //lookAt(glm::vec3(0, 0, 0));
-    //std::cout << glm::to_string(cameraOrientation) << std::endl;
-
-    //cameraAngle += cameraSpeed;  // Increase the angle each frame
     if (cameraAngle >= 2*M_PI){
         std::cout << "FULL CIRCLE" << std::endl;
-        // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger
+        // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger)
         cameraAngle = 0;
-        //cameraPosition = glm::vec3(0, 0, 4);
-
     } else {
         positionY = glm::mat3(
                 cos(cameraAngle), 0.0, sin(cameraAngle),
@@ -722,18 +711,12 @@ void draw(DrawingWindow &window, SDL_Event &event) {
                 -sin(cameraAngle), 0.0, cos(cameraAngle)
         );
         cameraAngle = cameraAngle + cameraSpeed;
-
-        //float cameraX = cameraRadius * sin(cameraAngle);
-        //float cameraZ = cameraRadius * cos(cameraAngle);
         cameraPosition = glm::vec3(0, 0, 4) * positionY;
     }
     lookAt(glm::vec3(0, 0, 0));
 
-    window.clearPixels();
-    //drawRasterisedScene(window);
-    drawRayTracedScene(window);
+    draw(window);
 }
-
 
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
@@ -743,116 +726,88 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 
             float angle = -M_PI/6;
             setRotationAngle('y', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_RIGHT){
             std::cout << "RIGHT" << std::endl;
 
             float angle = M_PI/6;
             setRotationAngle('y', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_UP){
             std::cout << "UP" << std::endl;
 
             float angle = -M_PI/6;
             setRotationAngle('x', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_DOWN){
             std::cout << "DOWN" << std::endl;
 
             float angle = M_PI/6;
             setRotationAngle('x', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_t) {
             std::cout << "t" << std::endl;
 
             float angle = -M_PI/12;
             setOrientationAngle('x', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_g) {
             std::cout << "g" << std::endl;
 
             float angle = M_PI/12;
             setOrientationAngle('x', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
 
             float angle = -M_PI/12;
             setOrientationAngle('y', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_h) {
             std::cout << "h" << std::endl;
 
             float angle = M_PI/12;
             setOrientationAngle('y', angle);
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_w) {
             std::cout << "w" << std::endl;
 
             cameraPosition[1]-=1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_s) {
             std::cout << "s" << std::endl;
 
             cameraPosition[1]+=1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_a) {
             std::cout << "a" << std::endl;
 
             cameraPosition[0]+=1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_d) {
             std::cout << "d" << std::endl;
 
             cameraPosition[0]-=1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_q) {
             cameraPosition[2] += 1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_e) {
             cameraPosition[2]-=1;
-            window.clearPixels();
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
         }
         else if (event.key.keysym.sym == SDLK_u) {
             std::cout << "u" << std::endl;
@@ -860,9 +815,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             CanvasPoint p1 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             CanvasPoint p2 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             CanvasPoint p3 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
-
             Colour colour = Colour(rand()%256, rand()%256, rand()%256);
-
             drawTriangle(window, CanvasTriangle(p1, p2, p3), colour);
 
         }
@@ -872,18 +825,18 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             CanvasPoint p1 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             CanvasPoint p2 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             CanvasPoint p3 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
-
             Colour colour = Colour(rand()%256, rand()%256, rand()%256);
-
             drawFilledTriangle(window, CanvasTriangle(p1, p2, p3), colour);
-            //drawFilledTriangle(window, CanvasTriangle(CanvasPoint(293.923, 129.97), CanvasPoint(348.677, 119.33), CanvasPoint(291.411, 119.33)), colour);
-
 
         } else if (event.key.keysym.sym == SDLK_l) {
             std::cout << "l" << std::endl;
+            renderMode++;
+            if (renderMode >= 3) {
+                renderMode = 0;
+            }
 
-            //drawRasterisedScene(window);
-            drawRayTracedScene(window);
+            draw(window);
+
         } else if (event.key.keysym.sym == SDLK_p) {
             std::cout << "p" << std::endl;
 
@@ -899,42 +852,20 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
     }
 }
 
+
 int main(int argc, char *argv[]) {
-
-    /*
-    // Test interpolateSingleFloats
-    std::vector<float> result;
-    result = interpolateSingleFloats(2.2, 8.5, 7);
-    for(size_t i=0; i<result.size(); i++) std::cout << result[i] << " ";
-    std::cout << std::endl;
-
-    // Test interpolateThreeElementValues
-    std::vector<glm::vec3> result3;
-    result3 = interpolateThreeElementValues(glm::vec3(0, 0, 255), glm::vec3(0, 255, 0), 4);
-    for(size_t i=0; i<result3.size(); i++){
-
-        std::cout << "(" << result3[i][0] << ", " << result3[i][1] << ", " << result3[i][2] << ")";
-        std::cout << std::endl;
-    }
-
-    */
     DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
     SDL_Event event;
     loadMtlFile(window);
     loadObjFile(window);
-    drawRayTracedScene(window);
+    draw(window);
 
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
         if (window.pollForInputEvents(event)) handleEvent(event, window);
         if (!paused) {
-            draw(window, event);
+            orbit(window, event);
         }
-        //RayTriangleIntersection tr = getClosestValidIntersection(cameraPosition, glm::vec3(-0.2, 0, -1));
-        //std::cout << tr.triangleIndex << std::endl;
-        //if (tr.triangleIndex == -1) {
-        //    std::cout << "-1 detected" << std::endl;
-        //}
         /*
         // Texture mapping, visual verification
         Colour white = Colour(255, 255, 255);
@@ -947,21 +878,6 @@ int main(int argc, char *argv[]) {
         drawTriangle(window, textureTriangle, white);
         loadMapTexture(window, triangle, textureTriangle);
          */
-
-
-        // draw2DLine(window, CanvasPoint(0,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
-        // draw2DLine(window, CanvasPoint(WIDTH,0), CanvasPoint(WIDTH/2,HEIGHT/2), Colour(255,255,255));
-        // draw2DLine(window, CanvasPoint(WIDTH/2,0), CanvasPoint(WIDTH/2,HEIGHT), Colour(255,255,255));
-        // draw2DLine(window, CanvasPoint(WIDTH/3,HEIGHT/2), CanvasPoint(WIDTH*2/3,HEIGHT/2), Colour(255,255,255));
-
-        // draw2DColour(window);
-
-        // drawGreyScale(window);
-
-        // drawRedNoise(window);
-
-        // Need to render the frame at the end, or nothing actually gets shown on the screen !
         window.renderFrame();
     }
-
 }
