@@ -443,7 +443,7 @@ void loadMapTexture(DrawingWindow &window, CanvasTriangle triangle, CanvasTriang
 
 
 
-RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar, glm::vec3 rayDirection) {
+RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm::vec3 rayDirection, ModelTriangle shootingTriangle, bool isEmptyTriangle) {
 
     std::vector<glm::vec3> possibleSolutions;
     std::vector<ModelTriangle> intersectedTriangles;
@@ -451,12 +451,18 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar,
 
     int i = 0;
     for (ModelTriangle triangle : faces) {
+        if(!isEmptyTriangle) {
+            if (triangle.vertices[0] == shootingTriangle.vertices[0] && triangle.vertices[1] == shootingTriangle.vertices[1] && triangle.vertices[2] == shootingTriangle.vertices[2]) {
+                i++;
+                continue;
+            }
+        }
         triangle.vertices[0] = triangle.vertices[0] * rotationX * rotationY;
         triangle.vertices[1] = triangle.vertices[1] * rotationX * rotationY;
         triangle.vertices[2] = triangle.vertices[2] * rotationX * rotationY;
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
-        glm::vec3 SPVector = cameraPositionVar - triangle.vertices[0];
+        glm::vec3 SPVector = rayStartCoord - triangle.vertices[0];
         glm::mat3 DEMatrix(-rayDirection, e0, e1);
         glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 
@@ -472,7 +478,7 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar,
                 //glm::vec3 posSolToCoord = triangle.vertices[0] + u * e0 + v * e1;
                 possibleSolutions.push_back(possibleSolution);
                 indexes.push_back(i);
-                intersectedTriangles.push_back(triangle);
+                intersectedTriangles.push_back(faces[i]);
             }
         }
         i++;
@@ -493,13 +499,23 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 cameraPositionVar,
             }
             i++;
         }
+
         ModelTriangle triangle = intersectedTriangles[index];
         triangle.vertices[0] = triangle.vertices[0] * rotationX * rotationY;
         triangle.vertices[1] = triangle.vertices[1] * rotationX * rotationY;
         triangle.vertices[2] = triangle.vertices[2] * rotationX * rotationY;
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
+
         glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
+        /*glm::vec3 posSolToCoordCheck = rayStartCoord + minDistance * rayDirection;
+
+        if (posSolToCoord != posSolToCoordCheck) {
+            std::cout << "ERROR: posSolToCoord != posSolToCoordCheck" << std::endl;
+            std::cout << posSolToCoord.x << " " << posSolToCoord.y << " " << posSolToCoord.z << " " << std::endl;
+            std::cout << posSolToCoordCheck.x << " " << posSolToCoordCheck.y << " " << posSolToCoordCheck.z << " " << std::endl;
+        }*/
+
         RayTriangleIntersection intersection = RayTriangleIntersection(posSolToCoord, minDistance, intersectedTriangles[index], indexes[index]);
         return intersection;
     }
@@ -610,7 +626,7 @@ void lookAt(glm::vec3 target) {
     cameraOrientation = glm::mat3(right, up, forward);
 }
 
-glm::vec3 pixelToDirection(int x, int y, int width, int height) {
+glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 
     // Convert from pixel coordinates to normalized device coordinates (range [-1, 1])
     float nx = (0.5f * (x-WIDTH/2)) / IMAGEPLANE;
@@ -618,8 +634,9 @@ glm::vec3 pixelToDirection(int x, int y, int width, int height) {
     float nz = -1.0f; // Assuming the camera looks towards -Z direction
 
     // Convert normalized device coordinates to world coordinates
-    glm::vec3 rayDir = glm::normalize(glm::vec3(nx, ny, nz));
-    return rayDir;
+    //glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
+    glm::vec3 rayDirFromCam = glm::vec3(nx, ny, nz);
+    return rayDirFromCam;
 }
 
 glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0);
@@ -629,12 +646,14 @@ void drawRayTracedScene(DrawingWindow &window) {
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
             // Convert pixel coordinates to a ray direction
-            glm::vec3 rayDir = pixelToDirection(x, y, WIDTH, HEIGHT);
-            //glm::vec3 rayDir = pixelToDirection(x, y, IMAGEPLANE, IMAGEPLANE);
+            glm::vec3 rayDir = pixelToDirectionFromCamera(x, y, WIDTH, HEIGHT);
             rayDir = rayDir * cameraOrientation; // Apply camera orientation
 
             // Find the closest intersection
-            RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir);
+            ModelTriangle emptyTriangle = ModelTriangle();
+            //std::cout << emptyTriangle.vertices.empty() << std::endl;
+            bool isEmptyTriangle = true;
+            RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, emptyTriangle, isEmptyTriangle);
             if (intersection.triangleIndex!=-1) {
                 // Color the pixel with the color of the intersected triangle
                 Colour colour = intersection.intersectedTriangle.colour;
@@ -647,9 +666,12 @@ void drawRayTracedScene(DrawingWindow &window) {
                 toLight = glm::normalize(toLight);
 
                 //RayTriangleIntersection intersectionShadow = getClosestValidIntersection(intersection.intersectionPoint, lightSourcePosition-intersection.intersectionPoint);
-                RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight);
+                isEmptyTriangle = false;
+                RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight, intersection.intersectedTriangle, isEmptyTriangle);
                 //if (intersectionShadow.intersectionPoint != lightSourcePosition) {
-                if (intersectionShadow.distanceFromCamera < distanceToLight) {
+                //std::cout << "intersectionShadow.distanceFromCamera: " << intersectionShadow.distanceFromCamera << " distanceToLight: " << distanceToLight << std::endl;
+                //std::cout << "intersectionShadow.intersectionPoint: " << glm::to_string(intersectionShadow.intersectionPoint) << " hitPoint: " << glm::to_string(hitPoint) << " lightSourcePosition: " << glm::to_string(lightSourcePosition) << std::endl;
+                if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
                     Colour black = Colour(0, 0, 0);
                     uint32_t pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
                     window.setPixelColour(x, y, pixelColor);
