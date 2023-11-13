@@ -451,9 +451,9 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
                 continue;
             }
         }
-        triangle.vertices[0] = triangle.vertices[0] * rotationX * rotationY;
-        triangle.vertices[1] = triangle.vertices[1] * rotationX * rotationY;
-        triangle.vertices[2] = triangle.vertices[2] * rotationX * rotationY;
+        triangle.vertices[0] = rotationY * rotationX * triangle.vertices[0];
+        triangle.vertices[1] = rotationY * rotationX * triangle.vertices[1];
+        triangle.vertices[2] = rotationY * rotationX * triangle.vertices[2];
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
         glm::vec3 SPVector = rayStartCoord - triangle.vertices[0];
@@ -493,14 +493,15 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         }
 
         ModelTriangle triangle = intersectedTriangles[index];
-        triangle.vertices[0] = triangle.vertices[0] * rotationX * rotationY;
-        triangle.vertices[1] = triangle.vertices[1] * rotationX * rotationY;
-        triangle.vertices[2] = triangle.vertices[2] * rotationX * rotationY;
+        triangle.vertices[0] = rotationY * rotationX * triangle.vertices[0];
+        triangle.vertices[1] = rotationY * rotationX * triangle.vertices[1];
+        triangle.vertices[2] = rotationY * rotationX * triangle.vertices[2];
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
 
         glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
-        /*glm::vec3 posSolToCoordCheck = rayStartCoord + minDistance * rayDirection;
+        posSolToCoord = glm::normalize(posSolToCoord);
+        /*glm::vec3 posSolToCoordCheck = rayStartCoord + rayDirection * minDistance;
 
         if (posSolToCoord != posSolToCoordCheck) {
             std::cout << "ERROR: posSolToCoord != posSolToCoordCheck" << std::endl;
@@ -617,8 +618,12 @@ void lookAt(glm::vec3 target) {
 glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 
     // Convert from pixel coordinates to normalized device coordinates (range [-1, 1])
-    float nx = (0.5f * (x-WIDTH/2)) / IMAGEPLANE;
-    float ny = -(0.5f * (y-HEIGHT/2)) / IMAGEPLANE;
+    glm::vec3 pixelCoord = glm::vec3(x, y, 0);
+    //float nx = (0.5f * (x-WIDTH/2)) / IMAGEPLANE;
+    //float ny = -(0.5f * (y-HEIGHT/2)) / IMAGEPLANE;
+    //float nz = -1.0f; // Assuming the camera looks towards -Z direction
+    float nx = (0.5f * (pixelCoord.x-WIDTH/2)) / IMAGEPLANE;
+    float ny = -(0.5f * (pixelCoord.y-HEIGHT/2)) / IMAGEPLANE;
     float nz = -1.0f; // Assuming the camera looks towards -Z direction
 
     // Convert normalized device coordinates to world coordinates
@@ -636,7 +641,7 @@ void drawRayTracedScene(DrawingWindow &window) {
         for (int x = 0; x < WIDTH; x++) {
             // Convert pixel coordinates to a ray direction
             glm::vec3 rayDir = pixelToDirectionFromCamera(x, y, WIDTH, HEIGHT);
-            rayDir = rayDir * cameraOrientation; // Apply camera orientation
+            rayDir = cameraOrientation * rayDir; // Apply camera orientation
 
             // Find the closest intersection
             ModelTriangle emptyTriangle = ModelTriangle();
