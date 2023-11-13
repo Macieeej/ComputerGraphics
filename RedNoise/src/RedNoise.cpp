@@ -618,17 +618,18 @@ void lookAt(glm::vec3 target) {
 glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 
     // Convert from pixel coordinates to normalized device coordinates (range [-1, 1])
-    glm::vec3 pixelCoord = glm::vec3(x, y, 0);
-    //float nx = (0.5f * (x-WIDTH/2)) / IMAGEPLANE;
-    //float ny = -(0.5f * (y-HEIGHT/2)) / IMAGEPLANE;
-    //float nz = -1.0f; // Assuming the camera looks towards -Z direction
-    float nx = (0.5f * (pixelCoord.x-WIDTH/2)) / IMAGEPLANE;
-    float ny = -(0.5f * (pixelCoord.y-HEIGHT/2)) / IMAGEPLANE;
+    float nx = (0.5f * (x-WIDTH/2)) / IMAGEPLANE;
+    float ny = -(0.5f * (y-HEIGHT/2)) / IMAGEPLANE;
     float nz = -1.0f; // Assuming the camera looks towards -Z direction
 
+    //glm::vec3 pixelCoord = glm::vec3(x, y, 0);
+    //float nx = (0.5f * (pixelCoord.x-WIDTH/2)) / IMAGEPLANE;
+    //float ny = -(0.5f * (pixelCoord.y-HEIGHT/2)) / IMAGEPLANE;
+    //float nz = -1.0f; // Assuming the camera looks towards -Z direction
+
     // Convert normalized device coordinates to world coordinates
-    //glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
-    glm::vec3 rayDirFromCam = glm::vec3(nx, ny, nz);
+    glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
+    //glm::vec3 rayDirFromCam = glm::vec3(nx, ny, nz);
     return rayDirFromCam;
 }
 
@@ -658,28 +659,12 @@ void drawRayTracedScene(DrawingWindow &window) {
                 float distanceToLight = glm::length(toLight);
                 toLight = glm::normalize(toLight);
 
-                //RayTriangleIntersection intersectionShadow = getClosestValidIntersection(intersection.intersectionPoint, lightSourcePosition-intersection.intersectionPoint);
                 isEmptyTriangle = false;
                 RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight, intersection.intersectedTriangle, isEmptyTriangle);
-                //if (intersectionShadow.intersectionPoint != lightSourcePosition) {
-                //std::cout << "intersectionShadow.distanceFromCamera: " << intersectionShadow.distanceFromCamera << " distanceToLight: " << distanceToLight << std::endl;
-                //std::cout << "intersectionShadow.intersectionPoint: " << glm::to_string(intersectionShadow.intersectionPoint) << " hitPoint: " << glm::to_string(hitPoint) << " lightSourcePosition: " << glm::to_string(lightSourcePosition) << std::endl;
                 if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
                     Colour black = Colour(0, 0, 0);
                     uint32_t pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
                     window.setPixelColour(x, y, pixelColor);
-
-                    /*hitPoint = cameraPosition + rayDir * intersectionShadow.distanceFromCamera;
-                    toLight = lightSourcePosition - hitPoint;
-                    distanceToLight = glm::length(toLight);
-                    toLight = glm::normalize(toLight);
-
-                    RayTriangleIntersection intersectionShadow2 = getClosestValidIntersection(hitPoint, toLight);
-                    if (intersectionShadow2.distanceFromCamera < distanceToLight) {
-                        Colour black = Colour(0, 0, 0);
-                        uint32_t pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
-                        window.setPixelColour(x, y, pixelColor);
-                    }*/
                 }
             }
         }
