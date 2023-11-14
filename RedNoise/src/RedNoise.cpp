@@ -499,8 +499,9 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
 
-        glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
-        posSolToCoord = glm::normalize(posSolToCoord);
+        //glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
+        glm::vec3 posSolToCoord = rayStartCoord + rayDirection * minDistance;
+        //posSolToCoord = glm::normalize(posSolToCoord);
         /*glm::vec3 posSolToCoordCheck = rayStartCoord + rayDirection * minDistance;
 
         if (posSolToCoord != posSolToCoordCheck) {
@@ -580,6 +581,7 @@ void loadObjFile(DrawingWindow &window) {
         }
         if (strings[0]=="f") {
             ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
+            triangle.normal = glm::cross(triangle.vertices[0], triangle.vertices[1]);
             faces.push_back(triangle);
         }
     }
@@ -650,15 +652,28 @@ void drawRayTracedScene(DrawingWindow &window) {
             RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, emptyTriangle, isEmptyTriangle);
             if (intersection.triangleIndex!=-1) {
                 // Color the pixel with the color of the intersected triangle
+                //glm::vec3 hitPointt = cameraPosition + rayDir * intersection.distanceFromCamera;
+                float distance = glm::length(lightSourcePosition - intersection.intersectionPoint)/4;
+                float intensityOfLighting = 1.0 / (4*M_PI*(distance * distance));
+                intensityOfLighting = glm::clamp(intensityOfLighting, 0.2f, 1.0f);
+                //std::cout << distance << std::endl;
+                //std::cout << intensityOfLighting << std::endl;
+
+                float angle = glm::dot(intersection.intersectedTriangle.normal, (lightSourcePosition- intersection.intersectionPoint));
+                //std::cout << angle << std::endl;
+                angle = glm::clamp(angle, 0.2f, 1.0f);
                 Colour colour = intersection.intersectedTriangle.colour;
-                uint32_t pixelColor = (255 << 24) + (int(colour.red) << 16) + (int(colour.green) << 8) + int(colour.blue);
+                uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting*angle) << 16) + (int(colour.green*intensityOfLighting*angle) << 8) + int(colour.blue*intensityOfLighting*angle);
+
+                //uint32_t pixelColor = (255 << 24) + (int(colour.red) << 16) + (int(colour.green) << 8) + int(colour.blue);
                 window.setPixelColour(x, y, pixelColor);
 
-                glm::vec3 hitPoint = cameraPosition + rayDir * intersection.distanceFromCamera;
+                // Check if the intersection point is in shadow
+                //glm::vec3 hitPoint = cameraPosition + rayDir * intersection.distanceFromCamera;
+                glm::vec3 hitPoint = intersection.intersectionPoint;
                 glm::vec3 toLight = lightSourcePosition - hitPoint;
                 float distanceToLight = glm::length(toLight);
                 toLight = glm::normalize(toLight);
-
                 isEmptyTriangle = false;
                 RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight, intersection.intersectedTriangle, isEmptyTriangle);
                 if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
