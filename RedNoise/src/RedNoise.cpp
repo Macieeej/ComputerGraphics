@@ -662,10 +662,10 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 float intensityOfLighting = 10 / (4*M_PI*(distance * distance));
                 intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
-                intensityOfLighting = glm::clamp(intensityOfLighting, 0.0f, 1.0f);
+                intensityOfLighting = glm::clamp(intensityOfLighting, 0.2f, 1.0f);
 
                 float angle = glm::dot(intersection.intersectedTriangle.normal, glm::normalize(lightSourcePosition - intersection.intersectionPoint));
-                angle = glm::clamp(angle, 0.0f, 1.0f);
+                angle = glm::clamp(angle, 0.2f, 1.0f);
 
                 if (angle > maxAngle) {
                     maxAngle = angle;
@@ -696,8 +696,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                 isEmptyTriangle = false;
                 RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight, intersection.intersectedTriangle, isEmptyTriangle);
                 if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
-                    Colour black = Colour(0, 0, 0);
+                    //Colour black = Colour(0, 0, 0);
                     //pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
+                    pixelColor = (255 << 24) + (int(colour.red*0.2) << 16) + (int(colour.green*0.2) << 8) + int(colour.blue*0.2);
                     //window.setPixelColour(x, y, pixelColor);
                 }
                 window.setPixelColour(x, y, pixelColor);
