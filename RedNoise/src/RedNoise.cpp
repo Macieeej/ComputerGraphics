@@ -581,7 +581,8 @@ void loadObjFile(DrawingWindow &window) {
         }
         if (strings[0]=="f") {
             ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
-            triangle.normal = glm::cross(triangle.vertices[0], triangle.vertices[1]);
+            //triangle.normal = glm::cross(triangle.vertices[2]-triangle.vertices[1], triangle.vertices[0]-triangle.vertices[1]);
+            triangle.normal = glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]);
             faces.push_back(triangle);
         }
     }
@@ -636,7 +637,11 @@ glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 }
 
 
-glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0);
+glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
+float maxAngle = 0;
+float minAngle = 1;
+float maxIntensity = 0;
+float minIntensity = 1;
 
 void drawRayTracedScene(DrawingWindow &window) {
     window.clearPixels();
@@ -655,15 +660,32 @@ void drawRayTracedScene(DrawingWindow &window) {
                 //glm::vec3 hitPointt = cameraPosition + rayDir * intersection.distanceFromCamera;
                 float distance = glm::length(lightSourcePosition - intersection.intersectionPoint)/4;
                 float intensityOfLighting = 1.0 / (4*M_PI*(distance * distance));
-                intensityOfLighting = glm::clamp(intensityOfLighting, 0.2f, 1.0f);
+                intensityOfLighting = glm::clamp(intensityOfLighting, 0.0f, 1.0f);
                 //std::cout << distance << std::endl;
                 //std::cout << intensityOfLighting << std::endl;
 
-                float angle = glm::dot(intersection.intersectedTriangle.normal, (lightSourcePosition- intersection.intersectionPoint));
+                float angle = glm::dot(glm::normalize(intersection.intersectedTriangle.normal), glm::normalize(lightSourcePosition - intersection.intersectionPoint));
                 //std::cout << angle << std::endl;
-                angle = glm::clamp(angle, 0.2f, 1.0f);
+                //angle = std::abs(angle);
+                angle = glm::clamp(angle, 0.0f, 1.0f);
+
+                if (angle > maxAngle) {
+                    maxAngle = angle;
+                }
+                if (angle < minAngle) {
+                    minAngle = angle;
+                }
+                if (intensityOfLighting > maxIntensity) {
+                    maxIntensity = intensityOfLighting;
+                }
+                if (intensityOfLighting < minIntensity) {
+                    minIntensity = intensityOfLighting;
+                }
+
+                intensityOfLighting = (intensityOfLighting + angle)/2;
+                //intensityOfLighting = angle;
                 Colour colour = intersection.intersectedTriangle.colour;
-                uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting*angle) << 16) + (int(colour.green*intensityOfLighting*angle) << 8) + int(colour.blue*intensityOfLighting*angle);
+                uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
 
                 //uint32_t pixelColor = (255 << 24) + (int(colour.red) << 16) + (int(colour.green) << 8) + int(colour.blue);
                 window.setPixelColour(x, y, pixelColor);
@@ -684,6 +706,11 @@ void drawRayTracedScene(DrawingWindow &window) {
             }
         }
     }
+    std::cout << "max angle: " << maxAngle << std::endl;
+    std::cout << "min angle: " << minAngle << std::endl;
+    std::cout << "max intensity: " << maxIntensity << std::endl;
+    std::cout << "min intensity: " << minIntensity << std::endl;
+
     std::cout << "Scene Drawn" << std::endl;
 }
 
