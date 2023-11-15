@@ -582,7 +582,7 @@ void loadObjFile(DrawingWindow &window) {
         if (strings[0]=="f") {
             ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
             //triangle.normal = glm::cross(triangle.vertices[2]-triangle.vertices[1], triangle.vertices[0]-triangle.vertices[1]);
-            triangle.normal = glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]);
+            triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
             faces.push_back(triangle);
         }
     }
@@ -657,16 +657,14 @@ void drawRayTracedScene(DrawingWindow &window) {
             RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, emptyTriangle, isEmptyTriangle);
             if (intersection.triangleIndex!=-1) {
                 // Color the pixel with the color of the intersected triangle
-                //glm::vec3 hitPointt = cameraPosition + rayDir * intersection.distanceFromCamera;
-                float distance = glm::length(lightSourcePosition - intersection.intersectionPoint)/4;
-                float intensityOfLighting = 1.0 / (4*M_PI*(distance * distance));
-                intensityOfLighting = glm::clamp(intensityOfLighting, 0.0f, 1.0f);
-                //std::cout << distance << std::endl;
-                //std::cout << intensityOfLighting << std::endl;
+                //float distance = glm::length(lightSourcePosition - intersection.intersectionPoint)/4;
+                float distance = glm::length(lightSourcePosition - intersection.intersectionPoint);
 
-                float angle = glm::dot(glm::normalize(intersection.intersectedTriangle.normal), glm::normalize(lightSourcePosition - intersection.intersectionPoint));
-                //std::cout << angle << std::endl;
-                //angle = std::abs(angle);
+                float intensityOfLighting = 10 / (4*M_PI*(distance * distance));
+                intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
+                intensityOfLighting = glm::clamp(intensityOfLighting, 0.0f, 1.0f);
+
+                float angle = glm::dot(intersection.intersectedTriangle.normal, glm::normalize(lightSourcePosition - intersection.intersectionPoint));
                 angle = glm::clamp(angle, 0.0f, 1.0f);
 
                 if (angle > maxAngle) {
@@ -683,12 +681,11 @@ void drawRayTracedScene(DrawingWindow &window) {
                 }
 
                 intensityOfLighting = (intensityOfLighting + angle)/2;
-                //intensityOfLighting = angle;
                 Colour colour = intersection.intersectedTriangle.colour;
                 uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
 
                 //uint32_t pixelColor = (255 << 24) + (int(colour.red) << 16) + (int(colour.green) << 8) + int(colour.blue);
-                window.setPixelColour(x, y, pixelColor);
+                //window.setPixelColour(x, y, pixelColor);
 
                 // Check if the intersection point is in shadow
                 //glm::vec3 hitPoint = cameraPosition + rayDir * intersection.distanceFromCamera;
@@ -700,9 +697,10 @@ void drawRayTracedScene(DrawingWindow &window) {
                 RayTriangleIntersection intersectionShadow = getClosestValidIntersection(hitPoint, toLight, intersection.intersectedTriangle, isEmptyTriangle);
                 if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
                     Colour black = Colour(0, 0, 0);
-                    uint32_t pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
-                    window.setPixelColour(x, y, pixelColor);
+                    //pixelColor = (255 << 24) + (int(black.red) << 16) + (int(black.green) << 8) + int(black.blue);
+                    //window.setPixelColour(x, y, pixelColor);
                 }
+                window.setPixelColour(x, y, pixelColor);
             }
         }
     }
