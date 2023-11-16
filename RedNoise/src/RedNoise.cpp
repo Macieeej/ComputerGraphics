@@ -30,6 +30,8 @@ std::vector<ModelTriangle> faces;
 float depthsArray[WIDTH+1][HEIGHT+1] = {0};
 
 glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
+glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
+
 float angleX = 0;
 float angleY = 0;
 glm::mat3 rotationX = glm::mat3(
@@ -560,7 +562,7 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
     Colour currentColour;
 
     if (isSphere) {
-        currentColour = colourPaletteMap["Blue"];
+        currentColour = colourPaletteMap["Red"];
     }
     std::ifstream file(fileName);
     while (std::getline(file, str)) {
@@ -638,7 +640,8 @@ void drawShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triang
     }
 }
 
-glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
+//glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
+glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 float maxAngle = 0;
 float minAngle = 1;
 float maxIntensity = 0;
@@ -739,7 +742,7 @@ void orbit(DrawingWindow &window, SDL_Event &event) {
                 -sin(cameraAngle), 0.0, cos(cameraAngle)
         );
         cameraAngle = cameraAngle + cameraSpeed;
-        cameraPosition = glm::vec3(0, 0, 4) * positionY;
+        cameraPosition = initialCameraPosition * positionY;
     }
     lookAt(glm::vec3(0, 0, 0));
 
@@ -886,6 +889,8 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     loadMtlFile(window);
     if (isSphere) {
+        cameraPosition = glm::vec3(0, 0.5, 1.5);
+        initialCameraPosition = cameraPosition;
         loadObjFile(window, "sphere.obj");
     } else {
         loadObjFile(window, "cornell-box.obj");
