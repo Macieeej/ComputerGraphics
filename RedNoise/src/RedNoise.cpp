@@ -667,6 +667,11 @@ void drawRayTracedScene(DrawingWindow &window) {
                 float angle = glm::dot(intersection.intersectedTriangle.normal, glm::normalize(lightSourcePosition - intersection.intersectionPoint));
                 angle = glm::clamp(angle, 0.2f, 1.0f);
 
+                glm::vec3 reflectionVec = glm::normalize(intersection.intersectionPoint - lightSourcePosition) - 2.0f*intersection.intersectedTriangle.normal*glm::dot(intersection.intersectionPoint - lightSourcePosition, intersection.intersectedTriangle.normal);
+                float reflection = pow(glm::dot(glm::normalize(lightSourcePosition - intersection.intersectionPoint), glm::normalize(reflectionVec)), 256);
+                reflection = glm::clamp(reflection, 0.2f, 1.0f);
+
+
                 if (angle > maxAngle) {
                     maxAngle = angle;
                 }
@@ -680,7 +685,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                     minIntensity = intensityOfLighting;
                 }
 
-                intensityOfLighting = (intensityOfLighting + angle)/2;
+                intensityOfLighting = (intensityOfLighting*3 + angle*3 + reflection)/7;
                 Colour colour = intersection.intersectedTriangle.colour;
                 uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
 
