@@ -21,8 +21,9 @@
 #define IMAGEPLANE 240
 
 bool paused = true;
-int renderMode = 2;
 
+// 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
+int renderMode = 2;
 bool isSphere = true;
 
 std::map<std::string, Colour> colourPaletteMap;
@@ -31,6 +32,8 @@ float depthsArray[WIDTH+1][HEIGHT+1] = {0};
 
 glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
 glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
+glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
+//glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 
 float angleX = 0;
 float angleY = 0;
@@ -553,6 +556,8 @@ void loadMtlFile(DrawingWindow &window) {
     }
 }
 
+std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
+
 
 // Load cornell-box.obj and read the vertices and faces
 void loadObjFile(DrawingWindow &window, std::string fileName) {
@@ -578,10 +583,34 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
         if (strings[0]=="f") {
             ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
             triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
+            // Sum up the vertex normals
+            if (isSphere) {
+                for (glm::vec3 vertex : triangle.vertices) {
+                    std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
+                    if (vertexNormalsMap.find(vertexAsString) == vertexNormalsMap.end()) {
+                        vertexNormalsMap[vertexAsString] = std::make_pair(triangle.normal, 1);
+                    } else {
+                        vertexNormalsMap[vertexAsString].first += triangle.normal;
+                        vertexNormalsMap[vertexAsString].second++;
+                    }
+                }
+            }
             faces.push_back(triangle);
         }
     }
 
+    // Get an iterator pointing to the first element in the map
+    std::map<std::string, std::pair<glm::vec3, int>>::iterator it = vertexNormalsMap.begin();
+
+    // Iterate through the map and print the elements
+    while (it != vertexNormalsMap.end())
+    {
+        float x = vertexNormalsMap[it->first].first[0]/vertexNormalsMap[it->first].second;
+        float y = vertexNormalsMap[it->first].first[1]/vertexNormalsMap[it->first].second;
+        float z = vertexNormalsMap[it->first].first[2]/vertexNormalsMap[it->first].second;
+        vertexNormalsMap[it->first].first = glm::normalize(glm::vec3(x, y, z));
+        ++it;
+    }
 }
 
 
@@ -640,45 +669,71 @@ void drawShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triang
     }
 }
 
-//glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
-glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 float maxAngle = 0;
 float minAngle = 1;
 float maxIntensity = 0;
 float minIntensity = 1;
 
-float getLightIntensity(RayTriangleIntersection intersection) {
+float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
-    float distance = glm::length(lightSourcePosition - intersection.intersectionPoint);
-    float intensityOfLighting = 5 / (3*M_PI*(distance * distance));
+    //Proximity lighting
+    //float distance = glm::length(lightSourcePosition - intersectionPoint);
+    //float proximity = 5 / (3*M_PI*(distance * distance));
     //intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
-    intensityOfLighting = glm::clamp(intensityOfLighting, 0.2f, 1.0f);
 
-    float angle = glm::dot(intersection.intersectedTriangle.normal, glm::normalize(lightSourcePosition - intersection.intersectionPoint));
-    angle = glm::clamp(angle, 0.2f, 1.0f);
+    //Angle of Incidence lighting
+    //float angleOfIncidence = glm::dot(normal, glm::normalize(lightSourcePosition - intersectionPoint));
 
-    glm::vec3 reflectionVec = glm::normalize(intersection.intersectionPoint - lightSourcePosition) - 2.0f*intersection.intersectedTriangle.normal*glm::dot(intersection.intersectionPoint - lightSourcePosition, intersection.intersectedTriangle.normal);
-    float reflection = pow(glm::dot(glm::normalize(lightSourcePosition - intersection.intersectionPoint), glm::normalize(reflectionVec)), 256);
-    reflection = glm::clamp(reflection, 0.2f, 1.0f);
+    //Specular lighting
+    glm::vec3 reflectionVec = glm::normalize(intersectionPoint - lightSourcePosition) - 2.0f*normal*glm::dot(intersectionPoint - lightSourcePosition, normal);
+    float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 256);
 
-    intensityOfLighting = (intensityOfLighting*3 + angle*3 + reflection)/7;
+    //Ambient lighting
+    //proximity = glm::clamp(proximity, 0.2f, 1.0f);
+    //angleOfIncidence = glm::clamp(angleOfIncidence, 0.2f, 1.0f);
+    specular = glm::clamp(specular, 0.2f, 1.0f);
 
-    if (angle > maxAngle) {
-        maxAngle = angle;
+
+    //float intensityOfLighting = (proximity*3 + angleOfIncidence*3 + specular)/7;
+    //float intensityOfLighting = (angleOfIncidence*2 + specular)/3;
+    float intensityOfLighting = specular;
+
+    /*if (angleOfIncidence > maxAngle) {
+        maxAngle = angleOfIncidence;
     }
-    if (angle < minAngle) {
-        minAngle = angle;
+    if (angleOfIncidence < minAngle) {
+        minAngle = angleOfIncidence;
     }
-    if (intensityOfLighting > maxIntensity) {
-        maxIntensity = intensityOfLighting;
+    if (proximity > maxIntensity) {
+        maxIntensity = proximity;
     }
-    if (intensityOfLighting < minIntensity) {
-        minIntensity = intensityOfLighting;
-    }
+    if (proximity < minIntensity) {
+        minIntensity = proximity;
+    }*/
 
     return intensityOfLighting;
 
 }
+
+
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+glm::vec3 getBarycentricCoordinates(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
+    // https://ceng2.ktu.edu.tr/~cakir/files/grafikler/Texture_Mapping.pdf
+    // https://www.sciencedirect.com/book/9781558607323/real-time-collision-detection#book-info
+    glm::vec3 v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = glm::dot(v0, v0);
+    float d01 = glm::dot(v0, v1);
+    float d11 = glm::dot(v1, v1);
+    float d20 = glm::dot(v2, v0);
+    float d21 = glm::dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0f - v - w;
+    return glm::vec3(u, v, w);
+}
+
 
 void drawRayTracedScene(DrawingWindow &window) {
 
@@ -691,18 +746,35 @@ void drawRayTracedScene(DrawingWindow &window) {
             rayDir = cameraOrientation * rayDir; // Apply camera orientation
 
             // Find the closest intersection
-            ModelTriangle emptyTriangle = ModelTriangle();
-            RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, emptyTriangle, true);
+            RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, ModelTriangle(), true);
 
             if (intersection.triangleIndex!=-1) {
 
-                float intensityOfLighting = getLightIntensity(intersection);
                 Colour colour = intersection.intersectedTriangle.colour;
-                uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
-                window.setPixelColour(x, y, pixelColor);
+
+                if (isSphere) {
+
+                    //std::vector<glm::vec3> normalsOfVertices;
+                    std::vector<float> intensityOfLightingOfVertices;
+                    for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
+                        std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
+                        //normalsOfVertices.push_back(vertexNormalsMap[vertexAsString].first);
+                        intensityOfLightingOfVertices.push_back(getLightIntensity(vertex, vertexNormalsMap[vertexAsString].first));
+                    }
+                    glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
+                    float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
+                    uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
+                    window.setPixelColour(x, y, pixelColor);
+                } else {
+                    float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
+                    uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
+                    window.setPixelColour(x, y, pixelColor);
+                }
+
+
 
                 // draw shadows
-                drawShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                //drawShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
             }
         }
     }
@@ -891,6 +963,7 @@ int main(int argc, char *argv[]) {
     if (isSphere) {
         cameraPosition = glm::vec3(0, 0.5, 1.5);
         initialCameraPosition = cameraPosition;
+        lightSourcePosition = glm::vec3(0.5, 1, 1);
         loadObjFile(window, "sphere.obj");
     } else {
         loadObjFile(window, "cornell-box.obj");
