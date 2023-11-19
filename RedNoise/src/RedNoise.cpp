@@ -21,6 +21,7 @@
 #define IMAGEPLANE 240
 
 bool paused = true;
+bool loadSphere = false;
 
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 2;
@@ -581,10 +582,11 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
             vertices.push_back(glm::vec3(std::stof(strings[1])*0.35, std::stof(strings[2])*0.35, std::stof(strings[3])*0.35));
         }
         if (strings[0]=="f") {
-            ModelTriangle triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
-            triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
-            // Sum up the vertex normals
-            if (isSphere) {
+           // Sum up the vertex normals
+            ModelTriangle triangle = ModelTriangle();
+            if (loadSphere) {
+                triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), vertices[std::stoi(split(strings[2], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), vertices[std::stoi(split(strings[3], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), currentColour);
+                triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
                 for (glm::vec3 vertex : triangle.vertices) {
                     std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
                     if (vertexNormalsMap.find(vertexAsString) == vertexNormalsMap.end()) {
@@ -594,6 +596,9 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
                         vertexNormalsMap[vertexAsString].second++;
                     }
                 }
+            } else {
+                triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
+                triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
             }
             faces.push_back(triangle);
         }
@@ -677,26 +682,26 @@ float minIntensity = 1;
 float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
     //Proximity lighting
-    //float distance = glm::length(lightSourcePosition - intersectionPoint);
-    //float proximity = 5 / (3*M_PI*(distance * distance));
+    float distance = glm::length(lightSourcePosition - intersectionPoint);
+    float proximity = 5 / (3*M_PI*(distance * distance));
     //intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
 
     //Angle of Incidence lighting
-    //float angleOfIncidence = glm::dot(normal, glm::normalize(lightSourcePosition - intersectionPoint));
+    float angleOfIncidence = glm::dot(normal, glm::normalize(lightSourcePosition - intersectionPoint));
 
     //Specular lighting
     glm::vec3 reflectionVec = glm::normalize(intersectionPoint - lightSourcePosition) - 2.0f*normal*glm::dot(intersectionPoint - lightSourcePosition, normal);
     float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 256);
 
     //Ambient lighting
-    //proximity = glm::clamp(proximity, 0.2f, 1.0f);
-    //angleOfIncidence = glm::clamp(angleOfIncidence, 0.2f, 1.0f);
+    proximity = glm::clamp(proximity, 0.2f, 1.0f);
+    angleOfIncidence = glm::clamp(angleOfIncidence, 0.2f, 1.0f);
     specular = glm::clamp(specular, 0.2f, 1.0f);
 
 
-    //float intensityOfLighting = (proximity*3 + angleOfIncidence*3 + specular)/7;
+    float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
     //float intensityOfLighting = (angleOfIncidence*2 + specular)/3;
-    float intensityOfLighting = specular;
+    //float intensityOfLighting = specular;
 
     /*if (angleOfIncidence > maxAngle) {
         maxAngle = angleOfIncidence;
@@ -855,29 +860,49 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         else if (event.key.keysym.sym == SDLK_t) {
             std::cout << "t" << std::endl;
 
-            float angle = -M_PI/12;
-            setOrientationAngle('x', angle);
+            //float angle = -M_PI/12;
+            //setOrientationAngle('x', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(0, 0.25, 0);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_g) {
             std::cout << "g" << std::endl;
 
-            float angle = M_PI/12;
-            setOrientationAngle('x', angle);
+            //float angle = M_PI/12;
+            //setOrientationAngle('x', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(0, -0.25, 0);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_f) {
             std::cout << "f" << std::endl;
 
-            float angle = -M_PI/12;
-            setOrientationAngle('y', angle);
+            //float angle = -M_PI/12;
+            //setOrientationAngle('y', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(-0.25, 0, 0);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_h) {
             std::cout << "h" << std::endl;
 
-            float angle = M_PI/12;
-            setOrientationAngle('y', angle);
+            //float angle = M_PI/12;
+            //setOrientationAngle('y', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(0.25, 0, 0);
+            draw(window);
+        }
+        else if (event.key.keysym.sym == SDLK_r) {
+            std::cout << "r" << std::endl;
+
+            //float angle = -M_PI/12;
+            //setOrientationAngle('y', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(0, 0, -0.25);
+            draw(window);
+        }
+        else if (event.key.keysym.sym == SDLK_y) {
+            std::cout << "y" << std::endl;
+
+            //float angle = M_PI/12;
+            //setOrientationAngle('y', angle);
+            lightSourcePosition = lightSourcePosition + glm::vec3(0, 0, 0.25);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_w) {
@@ -961,12 +986,17 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     loadMtlFile(window);
     if (isSphere) {
-        cameraPosition = glm::vec3(0, 0.5, 1.5);
-        initialCameraPosition = cameraPosition;
-        lightSourcePosition = glm::vec3(0.5, 1, 1);
+        //cameraPosition = glm::vec3(0, 0, 2);
+        //initialCameraPosition = cameraPosition;
+        //lightSourcePosition = glm::vec3(0,1,1);
+        loadObjFile(window, "cornell-box-no-red-box.obj");
+        loadSphere = true;
         loadObjFile(window, "sphere.obj");
     } else {
-        loadObjFile(window, "cornell-box.obj");
+        //loadObjFile(window, "cornell-box.obj");
+        //loadObjFile(window, "cornell-box.obj");
+        //isSphere = true;
+        loadObjFile(window, "sphere.obj");
     }
     draw(window);
 

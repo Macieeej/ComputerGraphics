@@ -21,6 +21,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564c0c4c-da72-473e-885c-6382b976cd88" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/cornell-box-no-red-box.obj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logo.obj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/materials.mtl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/texture.ppm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/RedNoise" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/RedNoise.o" beforeDir="false" afterPath="$PROJECT_DIR$/build/RedNoise.o" afterDir="false" />
@@ -123,7 +127,8 @@
       <workItem from="1700073238869" duration="20345000" />
       <workItem from="1700226873660" duration="4723000" />
       <workItem from="1700232836656" duration="45000" />
-      <workItem from="1700237853397" duration="10597000" />
+      <workItem from="1700237853397" duration="10923000" />
+      <workItem from="1700410017690" duration="6305000" />
     </task>
     <servers />
   </component>
