@@ -757,7 +757,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 Colour colour = intersection.intersectedTriangle.colour;
 
-                if (isSphere) {
+                if (colour.name == "Red") {
 
                     //std::vector<glm::vec3> normalsOfVertices;
                     std::vector<float> intensityOfLightingOfVertices;
