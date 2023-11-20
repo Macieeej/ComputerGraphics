@@ -20,12 +20,14 @@
 #define HEIGHT 240*4
 #define IMAGEPLANE 240
 
-bool paused = true;
-bool loadSphere = false;
-
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 1;
 bool isSphere = false;
+
+// DO NOT CHANGE THESE
+//!!!!!!!!!!!!!!!!!!!!!!
+bool paused = true;
+bool loadSphere = false;
 
 std::vector<std::vector<uint32_t>> textureArray;
 
@@ -390,23 +392,19 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     if (hasTexture) {
         int index = floor(pL.y)-floor(p0.y);
         pR.texturePoint = interpolate2DPoints(p0.texturePoint, p2.texturePoint, floor(p2.y)-floor(p0.y)+1)[index];
-        std::cout << "brake1" << std::endl;
     }
 
     if (pL.x > pR.x) std::swap(pL, pR);
 
     draw2DLine(window, pL, pR, colour_class);
-    std::cout << "brake2" << std::endl;
 
     //TOP HALF TRIANGLE
 
     // Interpolate p0 and pE
     std::vector<CanvasPoint> p0_pR = Array_2DLine(window, p0, pR);
-    std::cout << "brake3" << std::endl;
 
     // Interpolate p0 and p1
     std::vector<CanvasPoint> p0_pL = Array_2DLine(window, p0, pL);
-    std::cout << "brake4" << std::endl;
 
     int j = 0;
     int jj = 0;
@@ -418,17 +416,13 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     if (hasDepth) {
         depthsL = interpolateSingleFloats(p0.depth, pL.depth, floor(pL.y)-floor(p0.y)+1);
         depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y)+1);
-        std::cout << "brake5" << std::endl;
     }
 
     std::vector<TexturePoint> texturesL;
     std::vector<TexturePoint> texturesR;
     if (hasTexture) {
-        std::cout << "brake6" << std::endl;
         texturesL = interpolate2DPoints(p0.texturePoint, pL.texturePoint, floor(pL.y)-floor(p0.y)+1);
-        std::cout << "brake7" << std::endl;
         texturesR = interpolate2DPoints(p0.texturePoint, pR.texturePoint, floor(pL.y)-floor(p0.y)+1);
-        std::cout << "brake8" << std::endl;
     }
 
 
@@ -1072,23 +1066,22 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     loadMtlFile(window);
     if (isSphere) {
-        cameraPosition = glm::vec3(0.2, -0.5, 2);
+        cameraPosition = glm::vec3(0, 0, 4);
         initialCameraPosition = cameraPosition;
         lightSourcePosition = glm::vec3(0,1,1);
 
         // uncomment for sphere in a cornell box
-        //loadObjFile(window, "cornell-box-no-red-box.obj");
+        loadObjFile(window, "cornell-box-no-red-box.obj");
         loadSphere = true;
         loadObjFile(window, "sphere.obj");
     } else {
-        //loadObjFile(window, "cornell-box.obj");
         loadObjFile(window, "cornell-box.obj");
-        //isSphere = true;
-        //loadObjFile(window, "sphere.obj");
     }
-    // Uncomnent to draw scene
-    //draw(window);
 
+    // Uncomnent to draw scene
+    draw(window);
+
+    /*
     // Texture mapping, visual verification
     Colour white = Colour(255, 255, 255);
     loadMapTexture(window);
@@ -1102,7 +1095,7 @@ int main(int argc, char *argv[]) {
 
     CanvasTriangle triangle = CanvasTriangle(p1, p2, p3);
     drawFilledTriangle(window, triangle, white);
-    //drawTriangle(window, triangle, white);
+    */
 
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
