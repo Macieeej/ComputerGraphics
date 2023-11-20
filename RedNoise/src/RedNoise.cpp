@@ -33,7 +33,7 @@ std::vector<std::vector<uint32_t>> textureArray;
 
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
-float depthsArray[WIDTH+1][HEIGHT+1] = {0};
+float depthsArray[WIDTH+1][HEIGHT+1] = {};
 
 glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
 glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
@@ -276,8 +276,15 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
             float blue = colour_class.blue;
             uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
 
+            if (hasDepth && x>=0 && y>=0 && x<WIDTH && y<HEIGHT && hasTexture) {
+                float depth = depths[i];
 
-            if (hasDepth && x>=0 && y>=0 && x<WIDTH && y<HEIGHT) {
+                if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] ) {
+                    depthsArray[(int) floor(x)][(int) floor(y)] = depth;
+                    uint32_t textureVar = textureArray[(int) floor(textures[i].x)][(int) floor(textures[i].y)];
+                    window.setPixelColour(floor(x), floor(y), textureVar);
+                }
+            } else if (hasDepth && x>=0 && y>=0 && x<WIDTH && y<HEIGHT) {
                 float depth = depths[i];
 
                 if (depth >= depthsArray[(int) floor(x)][(int) floor(y)] ) {
@@ -356,6 +363,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     if (triangle[0].texturePoint.x!=-1) {
         std::cout << "has texture" << std::endl;
+        std::cout << triangle[0].texturePoint << std::endl;
         hasTexture = true;
     }
 
@@ -434,7 +442,15 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             jj++;
         }
         if (floor(p0_pL[j].y) == i && floor(p0_pR[jj].y) == i) {
-            if (hasDepth) {
+            if (hasDepth && hasTexture) {
+                CanvasPoint from = CanvasPoint((p0_pL[j].x), i, depthsL[iDepths]);
+                CanvasPoint to = CanvasPoint((p0_pR[jj].x), i, depthsR[iDepths]);
+                from.texturePoint = texturesL[iTextures];
+                to.texturePoint = texturesR[iTextures];
+                draw2DLine(window, from, to, colour_class);
+                iTextures++;
+                iDepths++;
+            } else if (hasDepth) {
                 draw2DLine(window, CanvasPoint((p0_pL[j].x), i, depthsL[iDepths]), CanvasPoint((p0_pR[jj].x), i, depthsR[iDepths]), colour_class);
                 iDepths++;
             } else if (hasTexture) {
@@ -483,7 +499,15 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             jj++;
         }
         if (floor(pL_p2[j].y) == i && floor(pR_p2[jj].y) == i) {
-            if (hasDepth) {
+            if (hasDepth && hasTexture) {
+                CanvasPoint from = CanvasPoint((pL_p2[j].x), i, depthsL[iDepths]);
+                CanvasPoint to = CanvasPoint((pR_p2[jj].x), i, depthsR[iDepths]);
+                from.texturePoint = texturesL[iTextures];
+                to.texturePoint = texturesR[iTextures];
+                draw2DLine(window, from, to, colour_class);
+                iTextures++;
+                iDepths++;
+            } else if (hasDepth) {
                 draw2DLine(window, CanvasPoint((pL_p2[j].x), i, depthsL[iDepths]), CanvasPoint((pR_p2[jj].x), i, depthsR[iDepths]), colour_class);
                 iDepths++;
             } else if (hasTexture) {
@@ -498,14 +522,14 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             }
         }
     }
-    drawTriangle(window, triangle, colour_class);
+    //drawTriangle(window, triangle, colour_class);
 
 }
 
 
-void loadMapTexture(DrawingWindow &window) {
+void loadMapTexture(DrawingWindow &window, std::string textureName) {
 
-    TextureMap texture = TextureMap("texture1.ppm");
+    TextureMap texture = TextureMap(textureName);
     textureArray.resize(texture.width, std::vector<uint32_t>(texture.height));
 
     for (int i=0; i<texture.width; i++) {
@@ -632,6 +656,11 @@ void loadMtlFile(DrawingWindow &window) {
             int g = std::stof(colourStrings[2])*255;
             int b = std::stof(colourStrings[3])*255;
             colourPaletteMap[colourName] = Colour(colourName, r, g, b);
+            if (colourName == "Cobbles") {
+                std::getline(file, str);
+                std::vector<std::string> textureName = split(str, ' ');
+                loadMapTexture(window, textureName[1]);
+            }
         }
     }
 }
@@ -644,6 +673,7 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
 
     std::string str;
     std::vector<glm::vec3> vertices;
+    std::vector<TexturePoint> texturePoints;
     Colour currentColour;
 
     if (isSphere) {
@@ -659,6 +689,11 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
         }
         if (strings[0]=="v") {
             vertices.push_back(glm::vec3(std::stof(strings[1])*0.35, std::stof(strings[2])*0.35, std::stof(strings[3])*0.35));
+        }
+        if (strings[0]=="vt") {
+            texturePoints.push_back(TexturePoint(std::stof(strings[1])*480, std::stof(strings[2])*395));
+            std::cout << std::stof(strings[1]) << " " << std::stof(strings[2]) << std::endl;
+            std::cout << std::stof(strings[1])*480 << " " << std::stof(strings[2])*395 << std::endl;
         }
         if (strings[0]=="f") {
            // Sum up the vertex normals
@@ -677,6 +712,11 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
                 }
             } else {
                 triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
+                if (split(strings[1], '/')[1] != "") {
+                    triangle.texturePoints[0] = texturePoints[std::stoi(split(strings[1], '/')[1])-1];
+                    triangle.texturePoints[1] = texturePoints[std::stoi(split(strings[2], '/')[1])-1];
+                    triangle.texturePoints[2] = texturePoints[std::stoi(split(strings[3], '/')[1])-1];
+                }
                 triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
             }
             faces.push_back(triangle);
@@ -706,6 +746,15 @@ void drawRasterisedScene(DrawingWindow &window) {
         CanvasPoint p0 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[0], 2);
         CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
         CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
+
+        //std::cout << triangle.texturePoints[0] << std::endl;
+        if (triangle.texturePoints[0].x!=0) {
+            p0.texturePoint = triangle.texturePoints[0];
+            p1.texturePoint = triangle.texturePoints[1];
+            p2.texturePoint = triangle.texturePoints[2];
+        }
+
+
 
         if (renderMode == 1) {
             drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
@@ -858,7 +907,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
 
                 // draw shadows
-                //drawShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                drawShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
             }
         }
     }
@@ -1068,13 +1117,14 @@ int main(int argc, char *argv[]) {
     if (isSphere) {
         cameraPosition = glm::vec3(0, 0, 4);
         initialCameraPosition = cameraPosition;
-        lightSourcePosition = glm::vec3(0,1,1);
+        //lightSourcePosition = glm::vec3(0,1,1);
 
         // uncomment for sphere in a cornell box
         loadObjFile(window, "cornell-box-no-red-box.obj");
         loadSphere = true;
         loadObjFile(window, "sphere.obj");
     } else {
+        //loadObjFile(window, "textured-cornell-box.obj");
         loadObjFile(window, "cornell-box.obj");
     }
 
