@@ -238,7 +238,6 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
 
     bool hasTexture = false;
     if (from.texturePoint.x!=-1) {
-        std::cout << "has texture" << std::endl;
         hasTexture = true;
     }
 
@@ -260,9 +259,7 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
 
     std::vector<TexturePoint> textures;
     if (hasTexture) {
-        std::cout << "brake i" << std::endl;
         textures = interpolate2DPoints(from.texturePoint, to.texturePoint, numberOfSteps+1);
-        std::cout << "brake ii" << std::endl;
     }
 
     if (numberOfSteps!=0) {
@@ -286,16 +283,13 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
                     window.setPixelColour(floor(x), floor(y), colour);
                 }
             } else if (hasTexture) {
-                //std::cout << (int) floor(textures[i].x) << " " << (int) floor(textures[i].y) << std::endl;
-                uint32_t colour = textureArray[(int) floor(textures[i].x)][(int) floor(textures[i].y)];
-                //std::cout << colour << std::endl;
-                window.setPixelColour(floor(x), floor(y), colour);
+                uint32_t textureVar = textureArray[(int) floor(textures[i].x)][(int) floor(textures[i].y)];
+                window.setPixelColour(floor(x), floor(y), textureVar);
             } else {
                 window.setPixelColour(floor(x), floor(y), colour);
             }
         }
     }
-    window.renderFrame();
 }
 
 
@@ -395,8 +389,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 
     if (hasTexture) {
         int index = floor(pL.y)-floor(p0.y);
-        //pR.texturePoint.x = interpolateSingleFloats(p0.texturePoint.x, p2.texturePoint.x, floor(p2.y)-floor(p0.y)+1)[index];
-        //pR.texturePoint.y = interpolateSingleFloats(p0.texturePoint.y, p2.texturePoint.y, floor(p2.y)-floor(p0.y)+1)[index];
         pR.texturePoint = interpolate2DPoints(p0.texturePoint, p2.texturePoint, floor(p2.y)-floor(p0.y)+1)[index];
         std::cout << "brake1" << std::endl;
     }
@@ -419,6 +411,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     int j = 0;
     int jj = 0;
     int iDepths = 0;
+    int iTextures = 0;
 
     std::vector<float> depthsL;
     std::vector<float> depthsR;
@@ -427,9 +420,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
         depthsR = interpolateSingleFloats(p0.depth, pR.depth, floor(pL.y)-floor(p0.y)+1);
         std::cout << "brake5" << std::endl;
     }
-
-
-    int iTextures = 0;
 
     std::vector<TexturePoint> texturesL;
     std::vector<TexturePoint> texturesR;
@@ -455,11 +445,10 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
                 iDepths++;
             } else if (hasTexture) {
                 CanvasPoint from = CanvasPoint((p0_pL[j].x), i);
-                CanvasPoint to = CanvasPoint((p0_pL[j].x), i);
+                CanvasPoint to = CanvasPoint((p0_pR[jj].x), i);
                 from.texturePoint = texturesL[iTextures];
                 to.texturePoint = texturesR[iTextures];
                 draw2DLine(window, from, to, colour_class);
-                std::cout << texturesL[iTextures] << std::endl;
                 iTextures++;
             } else {
                 draw2DLine(window, CanvasPoint(p0_pL[j].x, i), CanvasPoint(p0_pR[jj].x, i), colour_class);
@@ -479,10 +468,16 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
     j = 0;
     jj = 0;
     iDepths = 0;
+    iTextures = 0;
 
     if (hasDepth) {
         depthsL = interpolateSingleFloats(pL.depth, p2.depth, floor(p2.y)-floor(pL.y));
         depthsR = interpolateSingleFloats(pR.depth, p2.depth, floor(p2.y)-floor(pL.y));
+    }
+
+    if (hasTexture) {
+        texturesL = interpolate2DPoints(pL.texturePoint, p2.texturePoint, floor(p2.y)-floor(pL.y)+1);
+        texturesR = interpolate2DPoints(pR.texturePoint, p2.texturePoint, floor(p2.y)-floor(pL.y)+1);
     }
 
     for (float i = floor(pL.y); i < floor(p2.y); i++) {
@@ -497,6 +492,13 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             if (hasDepth) {
                 draw2DLine(window, CanvasPoint((pL_p2[j].x), i, depthsL[iDepths]), CanvasPoint((pR_p2[jj].x), i, depthsR[iDepths]), colour_class);
                 iDepths++;
+            } else if (hasTexture) {
+                CanvasPoint from = CanvasPoint((pL_p2[j].x), i);
+                CanvasPoint to = CanvasPoint((pR_p2[jj].x), i);
+                from.texturePoint = texturesL[iTextures];
+                to.texturePoint = texturesR[iTextures];
+                draw2DLine(window, from, to, colour_class);
+                iTextures++;
             } else {
                 draw2DLine(window, CanvasPoint(pL_p2[j].x, i), CanvasPoint(pR_p2[jj].x, i), colour_class);
             }
@@ -524,7 +526,7 @@ void loadMapTexture(DrawingWindow &window) {
         }
     }*/
 
-    //std::cout << textureArray.size() << " " << textureArray[0].size() << std::endl;
+    std::cout << "texture.width: " << texture.width << " texture.height: " << texture.height << std::endl;
 }
 
 
