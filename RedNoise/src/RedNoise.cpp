@@ -21,7 +21,7 @@
 #define IMAGEPLANE 240
 
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
-int renderMode = 1;
+int renderMode = 2;
 bool isSphere = false;
 
 // DO NOT CHANGE THESE
@@ -261,6 +261,9 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
 
     std::vector<TexturePoint> textures;
     if (hasTexture) {
+        //TexturePoint a = TexturePoint(from.texturePoint.x * from.depth, from.texturePoint.y * from.depth);
+        //TexturePoint b = TexturePoint(to.texturePoint.x * to.depth, to.texturePoint.y * to.depth);
+        //textures = interpolate2DPoints(a, b, numberOfSteps+1);
         textures = interpolate2DPoints(from.texturePoint, to.texturePoint, numberOfSteps+1);
     }
 
@@ -696,7 +699,6 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
             std::cout << std::stof(strings[1])*480 << " " << std::stof(strings[2])*395 << std::endl;
         }
         if (strings[0]=="f") {
-           // Sum up the vertex normals
             ModelTriangle triangle = ModelTriangle();
             if (loadSphere) {
                 triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), vertices[std::stoi(split(strings[2], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), vertices[std::stoi(split(strings[3], '/')[0])-1]+glm::vec3(0.3, -1.15, 0), currentColour);
@@ -726,7 +728,7 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
     // Get an iterator pointing to the first element in the map
     std::map<std::string, std::pair<glm::vec3, int>>::iterator it = vertexNormalsMap.begin();
 
-    // Iterate through the map and print the elements
+    // Iterate through the map, and normalize the vertices
     while (it != vertexNormalsMap.end())
     {
         float x = vertexNormalsMap[it->first].first[0]/vertexNormalsMap[it->first].second;
@@ -788,7 +790,7 @@ glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
 }
 
 
-void drawShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
+void drawHardShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
 
     glm::vec3 toLight = lightSourcePositionVar - intersectionPoint;
     float distanceToLight = glm::length(toLight);
@@ -801,6 +803,24 @@ void drawShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triang
         window.setPixelColour(x, y, pixelColor);
     }
 }
+
+// Return 1 if the intersection point is in shadow, 0 otherwise
+int getShadow(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
+
+    glm::vec3 toLight = lightSourcePositionVar - intersectionPoint;
+    float distanceToLight = glm::length(toLight);
+    toLight = glm::normalize(toLight);
+
+    RayTriangleIntersection intersectionShadow = getClosestValidIntersection(intersectionPoint, toLight, triangle, false);
+    // Check if the intersection point is in shadow
+    if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
+        //uint32_t  pixelColor = (255 << 24) + (int(colour.red*0.2) << 16) + (int(colour.green*0.2) << 8) + int(colour.blue*0.2);
+        //window.setPixelColour(x, y, pixelColor);
+        return 1;
+    }
+    return 0;
+}
+
 
 float maxAngle = 0;
 float minAngle = 1;
@@ -904,10 +924,10 @@ void drawRayTracedScene(DrawingWindow &window) {
                     window.setPixelColour(x, y, pixelColor);
                 }
 
-
-
                 // draw shadows
-                drawShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+
+
             }
         }
     }
