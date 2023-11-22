@@ -837,8 +837,11 @@ void drawSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle tr
     }
 
     shadowIntensity = shadowIntensity/(numberOfRays*numberOfRays);
+
+    if (shadowIntensity<0.2) {
+        shadowIntensity = 0.2;
+    }
     if (shadowIntensity != 1) {
-        //std::cout << shadowIntensity << std::endl;
         uint32_t  pixelColor = (255 << 24) + (int(colour.red*shadowIntensity) << 16) + (int(colour.green*shadowIntensity) << 8) + int(colour.blue*shadowIntensity);
         window.setPixelColour(x, y, pixelColor);
     }
