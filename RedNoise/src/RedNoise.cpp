@@ -737,6 +737,11 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
         vertexNormalsMap[it->first].first = glm::normalize(glm::vec3(x, y, z));
         ++it;
     }
+
+    //for (ModelTriangle triangle : faces) {
+    //    std::cout << triangle.colour << std::endl;
+    //    std::cout << triangle << std::endl;
+    //}
 }
 
 
@@ -804,21 +809,39 @@ void drawHardShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle tr
     }
 }
 
-// Return 1 if the intersection point is in shadow, 0 otherwise
-int getShadow(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
 
-    glm::vec3 toLight = lightSourcePositionVar - intersectionPoint;
-    float distanceToLight = glm::length(toLight);
-    toLight = glm::normalize(toLight);
+void drawSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
 
-    RayTriangleIntersection intersectionShadow = getClosestValidIntersection(intersectionPoint, toLight, triangle, false);
-    // Check if the intersection point is in shadow
-    if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
-        //uint32_t  pixelColor = (255 << 24) + (int(colour.red*0.2) << 16) + (int(colour.green*0.2) << 8) + int(colour.blue*0.2);
-        //window.setPixelColour(x, y, pixelColor);
-        return 1;
+    float lightWidth = 0.455;
+    int numberOfRays = 5;
+
+    glm::vec3 lightSourcePositionStart = lightSourcePositionVar - glm::vec3(lightWidth/2, 0, lightWidth/2);
+
+    float shadowIntensity = numberOfRays*numberOfRays;
+
+    for (int i=0; i<numberOfRays; i++) {
+        for (int j=0; j<numberOfRays; j++) {
+            glm::vec3 toLight = lightSourcePositionStart - intersectionPoint;
+            float distanceToLight = glm::length(toLight);
+            toLight = glm::normalize(toLight);
+
+            RayTriangleIntersection intersectionShadow = getClosestValidIntersection(intersectionPoint, toLight, triangle, false);
+            // Check if the intersection point is in shadow
+            if (intersectionShadow.distanceFromCamera < distanceToLight && intersectionShadow.triangleIndex != -1) {
+                shadowIntensity--;
+            }
+
+            lightSourcePositionStart += glm::vec3(lightWidth/numberOfRays, 0, 0);
+        }
+        lightSourcePositionStart += glm::vec3(-lightWidth, 0, lightWidth/numberOfRays);
     }
-    return 0;
+
+    shadowIntensity = shadowIntensity/(numberOfRays*numberOfRays);
+    if (shadowIntensity != 1) {
+        //std::cout << shadowIntensity << std::endl;
+        uint32_t  pixelColor = (255 << 24) + (int(colour.red*shadowIntensity) << 16) + (int(colour.green*shadowIntensity) << 8) + int(colour.blue*shadowIntensity);
+        window.setPixelColour(x, y, pixelColor);
+    }
 }
 
 
@@ -918,14 +941,21 @@ void drawRayTracedScene(DrawingWindow &window) {
                     float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
                     uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
+                    colour.red = colour.red*intensityOfLighting;
+                    colour.green = colour.green*intensityOfLighting;
+                    colour.blue = colour.blue*intensityOfLighting;
                 } else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
                     uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
+                    colour.red = colour.red*intensityOfLighting;
+                    colour.green = colour.green*intensityOfLighting;
+                    colour.blue = colour.blue*intensityOfLighting;
                 }
 
                 // draw shadows
-                drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                //drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
 
 
             }
