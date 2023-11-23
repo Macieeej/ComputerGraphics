@@ -614,7 +614,9 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
 
         //glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
+
         glm::vec3 posSolToCoord = rayStartCoord + rayDirection * minDistance;
+
         //posSolToCoord = glm::normalize(posSolToCoord);
         /*glm::vec3 posSolToCoordCheck = rayStartCoord + rayDirection * minDistance;
 
@@ -790,7 +792,8 @@ glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
     float nz = -1.0f; // Assuming the camera looks towards -Z direction
 
     // Convert normalized device coordinates to world coordinates
-    glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
+    //glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
+    glm::vec3 rayDirFromCam = (glm::vec3(nx, ny, nz));
     return rayDirFromCam;
 }
 
@@ -813,7 +816,7 @@ void drawHardShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle tr
 void drawSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
 
     float lightWidth = 0.455;
-    int numberOfRays = 5;
+    int numberOfRays = 10;
 
     glm::vec3 lightSourcePositionStart = lightSourcePositionVar - glm::vec3(lightWidth/2, 0, lightWidth/2);
 
@@ -923,6 +926,7 @@ void drawRayTracedScene(DrawingWindow &window) {
             // Convert pixel coordinates to a ray direction
             glm::vec3 rayDir = pixelToDirectionFromCamera(x, y, WIDTH, HEIGHT);
             rayDir = cameraOrientation * rayDir; // Apply camera orientation
+            //std::cout << "rayDir: " << glm::to_string(rayDir) << std::endl;
 
             // Find the closest intersection
             RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, ModelTriangle(), true);
@@ -941,13 +945,26 @@ void drawRayTracedScene(DrawingWindow &window) {
                         intensityOfLightingOfVertices.push_back(getLightIntensity(vertex, vertexNormalsMap[vertexAsString].first));
                     }
                     glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
+                    //glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], glm::normalize(lightSourcePosition - intersection.intersectionPoint));
                     float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
                     uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
                     colour.red = colour.red*intensityOfLighting;
                     colour.green = colour.green*intensityOfLighting;
                     colour.blue = colour.blue*intensityOfLighting;
-                } else {
+                }
+                else if (colour.name == "Magenta") {
+                    glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
+                    RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
+                    uint32_t pixelColor = (255 << 24) + (int(intersectionFromMirror.intersectedTriangle.colour.red) << 16) + (int(intersectionFromMirror.intersectedTriangle.colour.green) << 8) + int(intersectionFromMirror.intersectedTriangle.colour.blue);
+                    window.setPixelColour(x, y, pixelColor);
+                    /*uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
+                    window.setPixelColour(x, y, pixelColor);
+                    colour.red = colour.red*intensityOfLighting;
+                    colour.green = colour.green*intensityOfLighting;
+                    colour.blue = colour.blue*intensityOfLighting;*/
+                }
+                else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
                     uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
@@ -958,16 +975,16 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 // draw shadows
                 //drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                //drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
 
 
             }
         }
     }
-    std::cout << "max angle: " << maxAngle << std::endl;
-    std::cout << "min angle: " << minAngle << std::endl;
-    std::cout << "max intensity: " << maxIntensity << std::endl;
-    std::cout << "min intensity: " << minIntensity << std::endl;
+    //std::cout << "max angle: " << maxAngle << std::endl;
+    //std::cout << "min angle: " << minAngle << std::endl;
+    //std::cout << "max intensity: " << maxIntensity << std::endl;
+    //std::cout << "min intensity: " << minIntensity << std::endl;
     std::cout << "Scene Drawn" << std::endl;
 }
 
@@ -1013,29 +1030,41 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
         if (event.key.keysym.sym == SDLK_LEFT){
             std::cout << "LEFT" << std::endl;
 
-            float angle = -M_PI/6;
-            setRotationAngle('y', angle);
+            //float angle = -M_PI/6;
+            //setRotationAngle('y', angle);
+
+            float angle = -M_PI/12;
+            setOrientationAngle('y', angle);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_RIGHT){
             std::cout << "RIGHT" << std::endl;
 
-            float angle = M_PI/6;
-            setRotationAngle('y', angle);
+            //float angle = M_PI/6;
+            //setRotationAngle('y', angle);
+
+            float angle = M_PI/12;
+            setOrientationAngle('y', angle);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_UP){
             std::cout << "UP" << std::endl;
 
-            float angle = -M_PI/6;
-            setRotationAngle('x', angle);
+            //float angle = -M_PI/6;
+            //setRotationAngle('x', angle);
+
+            float angle = -M_PI/12;
+            setOrientationAngle('x', angle);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_DOWN){
             std::cout << "DOWN" << std::endl;
 
-            float angle = M_PI/6;
-            setRotationAngle('x', angle);
+            //float angle = M_PI/6;
+            //setRotationAngle('x', angle);
+
+            float angle = M_PI/12;
+            setOrientationAngle('x', angle);
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_t) {
@@ -1111,10 +1140,14 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_q) {
+            std::cout << "q" << std::endl;
+
             cameraPosition[2] += 1;
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_e) {
+            std::cout << "e" << std::endl;
+
             cameraPosition[2]-=1;
             draw(window);
         }
