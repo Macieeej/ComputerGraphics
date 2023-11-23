@@ -956,13 +956,13 @@ void drawRayTracedScene(DrawingWindow &window) {
                 else if (colour.name == "Magenta") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
-                    uint32_t pixelColor = (255 << 24) + (int(intersectionFromMirror.intersectedTriangle.colour.red) << 16) + (int(intersectionFromMirror.intersectedTriangle.colour.green) << 8) + int(intersectionFromMirror.intersectedTriangle.colour.blue);
+                    float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
+                    uint32_t pixelColor = (255 << 24) + (int(intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting) << 16) + (int(intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting) << 8) + int(intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
-                    /*uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
-                    window.setPixelColour(x, y, pixelColor);
-                    colour.red = colour.red*intensityOfLighting;
-                    colour.green = colour.green*intensityOfLighting;
-                    colour.blue = colour.blue*intensityOfLighting;*/
+
+                    colour.red = intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting;
+                    colour.green = intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting;
+                    colour.blue = intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting;
                 }
                 else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
@@ -975,7 +975,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 // draw shadows
                 //drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                //drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
 
 
             }
