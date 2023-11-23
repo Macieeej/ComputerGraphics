@@ -926,10 +926,10 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
     angleOfIncidence = glm::clamp(angleOfIncidence, 0.2f, 1.0f);
     specular = glm::clamp(specular, 0.2f, 1.0f);
 
-
+    // BEST Intensity of lighting
     float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
-    //float intensityOfLighting = (angleOfIncidence*2 + specular)/3;
-    //float intensityOfLighting = specular;
+
+    //intensityOfLighting = (proximity + angleOfIncidence + specular*2)/4;
 
     return intensityOfLighting;
 }
@@ -982,7 +982,6 @@ void drawRayTracedScene(DrawingWindow &window) {
                         intensityOfLightingOfVertices.push_back(getLightIntensity(vertex, vertexNormalsMap[vertexAsString].first));
                     }
                     glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
-                    //glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], glm::normalize(lightSourcePosition - intersection.intersectionPoint));
                     float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
                     uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     window.setPixelColour(x, y, pixelColor);
@@ -994,6 +993,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
+
                     //uint32_t pixelColor = (255 << 24) + (int(intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting) << 16) + (int(intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting) << 8) + int(intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting);
                     //window.setPixelColour(x, y, pixelColor);
 
@@ -1006,6 +1006,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                 }
                 else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
+
                     //uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
                     //window.setPixelColour(x, y, pixelColor);
 
@@ -1228,6 +1229,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "p" << std::endl;
 
             if (paused) {
+                //initialCameraPosition = cameraPosition;
                 paused = false;
             } else {
                 paused = true;
@@ -1251,6 +1253,7 @@ int main(int argc, char *argv[]) {
 
         // uncomment for sphere in a cornell box
         loadObjFile(window, "cornell-box-no-red-box.obj");
+
         loadSphere = true;
         loadObjFile(window, "sphere.obj");
     } else {
