@@ -22,7 +22,7 @@
 
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 2;
-bool isSphere = true;
+bool isSphere = false;
 
 // DO NOT CHANGE THESE
 //!!!!!!!!!!!!!!!!!!!!!!
@@ -672,8 +672,6 @@ void loadMtlFile(DrawingWindow &window) {
     }
 }
 
-//std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
-
 
 // Load cornell-box.obj and read the vertices and faces
 void loadObjFile(DrawingWindow &window, std::string fileName) {
@@ -758,14 +756,11 @@ void drawRasterisedScene(DrawingWindow &window) {
         CanvasPoint p1 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[1], 2);
         CanvasPoint p2 = getCanvasIntersectionPoint(cameraPosition, triangle.vertices[2], 2);
 
-        //std::cout << triangle.texturePoints[0] << std::endl;
         if (triangle.texturePoints[0].x!=0) {
             p0.texturePoint = triangle.texturePoints[0];
             p1.texturePoint = triangle.texturePoints[1];
             p2.texturePoint = triangle.texturePoints[2];
         }
-
-
 
         if (renderMode == 1) {
             drawFilledTriangle(window, CanvasTriangle(p0, p1, p2), triangle.colour);
@@ -794,8 +789,8 @@ glm::vec3 pixelToDirectionFromCamera(int x, int y, int width, int height) {
     float nz = -1.0f; // Assuming the camera looks towards -Z direction
 
     // Convert normalized device coordinates to world coordinates
-    //glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
-    glm::vec3 rayDirFromCam = (glm::vec3(nx, ny, nz));
+    glm::vec3 rayDirFromCam = glm::normalize(glm::vec3(nx, ny, nz));
+    //glm::vec3 rayDirFromCam = glm::vec3(nx, ny, nz);
     return rayDirFromCam;
 }
 
@@ -902,10 +897,9 @@ void drawPixelSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriang
     if (shadowIntensity<0.2) {
         shadowIntensity = 0.2;
     }
-    //if (shadowIntensity != 1) {
+
     uint32_t  pixelColor = (255 << 24) + (int(colour.red*shadowIntensity) << 16) + (int(colour.green*shadowIntensity) << 8) + int(colour.blue*shadowIntensity);
     window.setPixelColour(x, y, pixelColor);
-    //}
 }
 
 void drawPixelNoShadows(int x, int y, Colour colour, DrawingWindow &window) {
@@ -913,14 +907,11 @@ void drawPixelNoShadows(int x, int y, Colour colour, DrawingWindow &window) {
     window.setPixelColour(x, y, pixelColor);
 }
 
-bool phong = false;
-
 float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
     //Proximity lighting
     float distance = glm::length(lightSourcePosition - intersectionPoint);
     float proximity = 5 / (3*M_PI*(distance * distance));
-
     //intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
 
     //Angle of Incidence lighting
@@ -928,7 +919,6 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
     //Specular lighting
     glm::vec3 reflectionVec = glm::normalize(intersectionPoint - lightSourcePosition) - 2.0f*normal*glm::dot(intersectionPoint - lightSourcePosition, normal);
-
     float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 255);
 
     //Ambient lighting
@@ -937,10 +927,12 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
     specular = glm::clamp(specular, 0.2f, 1.0f);
 
     // BEST Intensity of lighting
-    //float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
+    float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
 
-    // BEST Intensity of lighting for sphere
-    float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular*6)/11;
+    if (isSphere) {
+        // BEST Intensity of lighting for sphere
+        intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular*6)/11;
+    }
 
     return intensityOfLighting;
 }
@@ -980,8 +972,6 @@ float getGouraudShadingIntensity(RayTriangleIntersection intersection) {
 
 float getPhongShadingIntensity(RayTriangleIntersection intersection) {
 
-    phong = true;
-
     std::vector<glm::vec3> vertexNormals;
     for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
         std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
@@ -991,12 +981,7 @@ float getPhongShadingIntensity(RayTriangleIntersection intersection) {
     glm::vec3 barycentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
     glm::vec3 interpolatedNormal = barycentricCoordinates.x*vertexNormals[0] + barycentricCoordinates.y*vertexNormals[1] + barycentricCoordinates.z*vertexNormals[2];
 
-    interpolatedNormal = glm::normalize(interpolatedNormal);
-
     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, interpolatedNormal);
-
-    phong = false;
-
     return intensityOfLighting;
 }
 
@@ -1010,7 +995,6 @@ void drawRayTracedScene(DrawingWindow &window) {
             // Convert pixel coordinates to a ray direction
             glm::vec3 rayDir = pixelToDirectionFromCamera(x, y, WIDTH, HEIGHT);
             rayDir = cameraOrientation * rayDir; // Apply camera orientation
-            //std::cout << "rayDir: " << glm::to_string(rayDir) << std::endl;
 
             // Find the closest intersection
             RayTriangleIntersection intersection = getClosestValidIntersection(cameraPosition, rayDir, ModelTriangle(), true);
@@ -1019,18 +1003,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 Colour colour = intersection.intersectedTriangle.colour;
 
-                if ((colour.name == "Red" && isSphere) && isSphere) {
-
-
-                    /*std::vector<float> intensityOfLightingOfVertices;
-                    for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
-                        std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
-                        //normalsOfVertices.push_back(vertexNormalsMap[vertexAsString].first);
-                        intensityOfLightingOfVertices.push_back(getLightIntensity(vertex, vertexNormalsMap[vertexAsString].first));
-                    }
-                    glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
-                    float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
-                    */
+                if (colour.name == "Red" && isSphere) {
 
                     //float intensityOfLighting = getGouraudShadingIntensity(intersection);
                     float intensityOfLighting = getPhongShadingIntensity(intersection);
@@ -1041,7 +1014,8 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                     drawPixelNoShadows(x, y, colour, window);
                 }
-                else if (colour.name == "Magentaa") {
+                // Set colour name to colour of object that will be the mirror
+                else if (colour.name == "Blue") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1050,9 +1024,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                     colour.green = intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting;
                     colour.blue = intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting;
 
-                    drawPixelNoShadows(x, y, colour, window);
+                    //drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
-                    //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
+                    drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
@@ -1061,23 +1035,18 @@ void drawRayTracedScene(DrawingWindow &window) {
                     colour.green = colour.green*intensityOfLighting;
                     colour.blue = colour.blue*intensityOfLighting;
 
-                    drawPixelNoShadows(x, y, colour, window);
+                    //drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                    //drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                    drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
                 }
 
                 // draw shadows
                 //drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
                 //drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
 
-
             }
         }
     }
-    //std::cout << "max angle: " << maxAngle << std::endl;
-    //std::cout << "min angle: " << minAngle << std::endl;
-    //std::cout << "max intensity: " << maxIntensity << std::endl;
-    //std::cout << "min intensity: " << minIntensity << std::endl;
     std::cout << "Scene Drawn" << std::endl;
 }
 
@@ -1104,16 +1073,16 @@ void orbit(DrawingWindow &window, SDL_Event &event) {
         // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger)
         cameraAngle = 0;
     } else {
+        cameraAngle = cameraAngle + cameraSpeed;
         positionY = glm::mat3(
                 cos(cameraAngle), 0.0, sin(cameraAngle),
                 0.0, 1.0, 0.0,
                 -sin(cameraAngle), 0.0, cos(cameraAngle)
         );
-        cameraAngle = cameraAngle + cameraSpeed;
         cameraPosition = initialCameraPosition * positionY;
     }
-    lookAt(glm::vec3(0, 0, 0));
 
+    lookAt(glm::vec3(0, 0, 0));
     draw(window);
 }
 
@@ -1309,7 +1278,7 @@ int main(int argc, char *argv[]) {
         loadObjFile(window, "cornell-box.obj");
     }
 
-    // Uncomnent to draw scene
+    // Uncomment to draw scene
     draw(window);
 
     /*
