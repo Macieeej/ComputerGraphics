@@ -22,12 +22,14 @@
 
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 2;
-bool isSphere = false;
+bool isSphere = true;
 
 // DO NOT CHANGE THESE
 //!!!!!!!!!!!!!!!!!!!!!!
 bool paused = true;
 bool loadSphere = false;
+
+std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
 
 std::vector<std::vector<uint32_t>> textureArray;
 
@@ -670,7 +672,7 @@ void loadMtlFile(DrawingWindow &window) {
     }
 }
 
-std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
+//std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
 
 
 // Load cornell-box.obj and read the vertices and faces
@@ -906,12 +908,19 @@ void drawPixelSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriang
     //}
 }
 
+void drawPixelNoShadows(int x, int y, Colour colour, DrawingWindow &window) {
+    uint32_t pixelColor = (255 << 24) + (int(colour.red) << 16) + (int(colour.green) << 8) + int(colour.blue);
+    window.setPixelColour(x, y, pixelColor);
+}
+
+bool phong = false;
 
 float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
     //Proximity lighting
     float distance = glm::length(lightSourcePosition - intersectionPoint);
     float proximity = 5 / (3*M_PI*(distance * distance));
+
     //intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
 
     //Angle of Incidence lighting
@@ -919,7 +928,8 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 
     //Specular lighting
     glm::vec3 reflectionVec = glm::normalize(intersectionPoint - lightSourcePosition) - 2.0f*normal*glm::dot(intersectionPoint - lightSourcePosition, normal);
-    float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 256);
+
+    float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 255);
 
     //Ambient lighting
     proximity = glm::clamp(proximity, 0.2f, 1.0f);
@@ -927,9 +937,10 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
     specular = glm::clamp(specular, 0.2f, 1.0f);
 
     // BEST Intensity of lighting
-    float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
+    //float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
 
-    //intensityOfLighting = (proximity + angleOfIncidence + specular*2)/4;
+    // BEST Intensity of lighting for sphere
+    float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular*6)/11;
 
     return intensityOfLighting;
 }
@@ -953,6 +964,42 @@ glm::vec3 getBarycentricCoordinates(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::
     return glm::vec3(u, v, w);
 }
 
+float getGouraudShadingIntensity(RayTriangleIntersection intersection) {
+
+    std::vector<float> intensityOfLightingOfVertices;
+    for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
+        std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
+        intensityOfLightingOfVertices.push_back(getLightIntensity(vertex, vertexNormalsMap[vertexAsString].first));
+    }
+
+    glm::vec3 barycentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
+    float intensityOfLighting = barycentricCoordinates.x*intensityOfLightingOfVertices[0] + barycentricCoordinates.y*intensityOfLightingOfVertices[1] + barycentricCoordinates.z*intensityOfLightingOfVertices[2];
+    return intensityOfLighting;
+}
+
+
+float getPhongShadingIntensity(RayTriangleIntersection intersection) {
+
+    phong = true;
+
+    std::vector<glm::vec3> vertexNormals;
+    for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
+        std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
+        vertexNormals.push_back(vertexNormalsMap[vertexAsString].first);
+    }
+
+    glm::vec3 barycentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
+    glm::vec3 interpolatedNormal = barycentricCoordinates.x*vertexNormals[0] + barycentricCoordinates.y*vertexNormals[1] + barycentricCoordinates.z*vertexNormals[2];
+
+    interpolatedNormal = glm::normalize(interpolatedNormal);
+
+    float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, interpolatedNormal);
+
+    phong = false;
+
+    return intensityOfLighting;
+}
+
 
 void drawRayTracedScene(DrawingWindow &window) {
 
@@ -974,8 +1021,8 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                 if ((colour.name == "Red" && isSphere) && isSphere) {
 
-                    //std::vector<glm::vec3> normalsOfVertices;
-                    std::vector<float> intensityOfLightingOfVertices;
+
+                    /*std::vector<float> intensityOfLightingOfVertices;
                     for (glm::vec3 vertex : intersection.intersectedTriangle.vertices) {
                         std::string vertexAsString = std::to_string(vertex.x) + " " + std::to_string(vertex.y) + " " + std::to_string(vertex.z);
                         //normalsOfVertices.push_back(vertexNormalsMap[vertexAsString].first);
@@ -983,39 +1030,40 @@ void drawRayTracedScene(DrawingWindow &window) {
                     }
                     glm::vec3 baricentricCoordinates = getBarycentricCoordinates(intersection.intersectedTriangle.vertices[0], intersection.intersectedTriangle.vertices[1], intersection.intersectedTriangle.vertices[2], intersection.intersectionPoint);
                     float intensityOfLighting = baricentricCoordinates.x*intensityOfLightingOfVertices[0] + baricentricCoordinates.y*intensityOfLightingOfVertices[1] + baricentricCoordinates.z*intensityOfLightingOfVertices[2];
-                    uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
-                    window.setPixelColour(x, y, pixelColor);
+                    */
+
+                    //float intensityOfLighting = getGouraudShadingIntensity(intersection);
+                    float intensityOfLighting = getPhongShadingIntensity(intersection);
+
                     colour.red = colour.red*intensityOfLighting;
                     colour.green = colour.green*intensityOfLighting;
                     colour.blue = colour.blue*intensityOfLighting;
+
+                    drawPixelNoShadows(x, y, colour, window);
                 }
-                else if (colour.name == "Magenta") {
+                else if (colour.name == "Magentaa") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
-
-                    //uint32_t pixelColor = (255 << 24) + (int(intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting) << 16) + (int(intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting) << 8) + int(intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting);
-                    //window.setPixelColour(x, y, pixelColor);
 
                     colour.red = intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting;
                     colour.green = intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting;
                     colour.blue = intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting;
 
+                    drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
-                    drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
+                    //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
-
-                    //uint32_t pixelColor = (255 << 24) + (int(colour.red*intensityOfLighting) << 16) + (int(colour.green*intensityOfLighting) << 8) + int(colour.blue*intensityOfLighting);
-                    //window.setPixelColour(x, y, pixelColor);
 
                     colour.red = colour.red*intensityOfLighting;
                     colour.green = colour.green*intensityOfLighting;
                     colour.blue = colour.blue*intensityOfLighting;
 
+                    drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                    drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                    //drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
                 }
 
                 // draw shadows
