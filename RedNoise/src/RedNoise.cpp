@@ -37,8 +37,11 @@ std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[WIDTH+1][HEIGHT+1] = {};
 
-glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
-glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
+//glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
+//glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
+glm::vec3 cameraPosition = glm::vec3(0.0, 0.0, -0.8);
+glm::vec3 initialCameraPosition = glm::vec3(0.0, 0.0, -0.8);
+
 glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
 //glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 
@@ -985,21 +988,29 @@ float getPhongShadingIntensity(RayTriangleIntersection intersection) {
     return intensityOfLighting;
 }
 
-glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refractiveIndex)
-{
+glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refractiveIndex) {
+    //https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
     float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -1.0f, 1.0f);
-    float etai = 1, etat = refractiveIndex;
+//    float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -0.99f, 0.99f);
+    float etai = 1;
+    float etat = refractiveIndex;
     glm::vec3 n = surfaceNormal;
-    if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -surfaceNormal; }
+
+    if (cosi < 0) {
+        cosi = -cosi;
+    } else {
+        std::swap(etai, etat); n= -surfaceNormal;
+    }
+
     float eta = etai / etat;
     float k = 1 - eta * eta * (1 - cosi * cosi);
+
     if (k < 0) {
         // total internal reflection. There is no refraction in this case
         return glm::vec3(0, 0, 0);
     } else {
         return eta * rayDirection + (eta * cosi - sqrtf(k)) * n;
     }
-    //return k < 0 ? 0 : eta * rayDirection + (eta * cosi - sqrtf(k)) * n;
 }
 
 void drawRayTracedScene(DrawingWindow &window) {
@@ -1040,9 +1051,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                     colour.green = intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting;
                     colour.blue = intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting;
 
-                    //drawPixelNoShadows(x, y, colour, window);
+                    drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
-                    drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
+                    //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 //Set colour name to colour of object that will be the glass
                 else if (colour.name == "Blue" && !isSphere) {
@@ -1067,7 +1078,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                         bool inside = true;
                         bool testDraw = false;
 
-//                        int i=0;
+                        int i=0;
 
                         while (inside) {
                             RayTriangleIntersection intersectionFromPointOfRefraction = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
@@ -1087,10 +1098,10 @@ void drawRayTracedScene(DrawingWindow &window) {
                                 testDraw = true;
                                 inside = false;
                             }
-//                            i++;
-//                            if (i==2) {
-//                                inside = false;
-//                            }
+                            i++;
+                            if (i==4) {
+                                inside = false;
+                            }
                         }
 
                         if (testDraw) {
@@ -1121,9 +1132,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                     colour.green = colour.green*intensityOfLighting;
                     colour.blue = colour.blue*intensityOfLighting;
 
-                    //drawPixelNoShadows(x, y, colour, window);
+                    drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                    drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
+                    //drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
                 }
 
                 // draw shadows
@@ -1361,9 +1372,11 @@ int main(int argc, char *argv[]) {
         loadObjFile(window, "sphere.obj");
     } else {
         //loadObjFile(window, "textured-cornell-box.obj");
-        loadObjFile(window, "cornell-box.obj");
+        loadObjFile(window, "cornell-box-closed.obj");
+        //loadObjFile(window, "cornell-box.obj");
     }
 
+    lookAt(glm::vec3(0, 0, 0));
     // Uncomment to draw scene
     draw(window);
 
