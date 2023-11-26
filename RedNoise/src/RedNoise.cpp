@@ -1053,7 +1053,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                     if (refractedRayDir == glm::vec3(0, 0, 0)) {
                         // total reflection, there is no refraction
-                        std::cout << "reflect" << std::endl;
+                        //std::cout << "reflect1" << std::endl;
                         glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                         RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                         float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1067,21 +1067,30 @@ void drawRayTracedScene(DrawingWindow &window) {
                         bool inside = true;
                         bool testDraw = false;
 
+//                        int i=0;
+
                         while (inside) {
                             RayTriangleIntersection intersectionFromPointOfRefraction = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
-                            glm::vec3 refractedRayDirTemp = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, 1.3));
+                            // possibly needs to change the refractiveIndex to 1.0, since we are inside the Glass
+                            glm::vec3 refractedRayDirFromPointOfRefraction = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, 1.3));
 
-                            if (refractedRayDirTemp == glm::vec3(0, 0, 0)) {
+                            if (refractedRayDirFromPointOfRefraction == glm::vec3(0, 0, 0)) {
                                 // total reflection, there is no refraction
+                                //std::cout << "reflect2" << std::endl;
+                                glm::vec3 vectorOfReflectionInsideGlass = refractedRayDir - 2.0f*(-intersectionFromPointOfRefraction.intersectedTriangle.normal)*glm::dot(refractedRayDir, (-intersectionFromPointOfRefraction.intersectedTriangle.normal));
+                                intersection = getClosestValidIntersection(intersectionFromPointOfRefraction.intersectionPoint, vectorOfReflectionInsideGlass, intersectionFromPointOfRefraction.intersectedTriangle, false);
+                                refractedRayDir = vectorOfReflectionInsideGlass;
 
-                                // change to true later
-                                inside = false;
                             } else {
-                                refractedRayDir = refractedRayDirTemp;
+                                refractedRayDir = refractedRayDirFromPointOfRefraction;
                                 intersection = intersectionFromPointOfRefraction;
                                 testDraw = true;
                                 inside = false;
                             }
+//                            i++;
+//                            if (i==2) {
+//                                inside = false;
+//                            }
                         }
 
                         if (testDraw) {
@@ -1093,6 +1102,8 @@ void drawRayTracedScene(DrawingWindow &window) {
                             colour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting;
 
                             drawPixelNoShadows(x, y, colour, window);
+                            //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
+                            //drawPixelSoftShadows(x, y, intersectionOutsideGlass.intersectionPoint, intersectionOutsideGlass.intersectedTriangle, lightSourcePosition, colour, window);
                         }
 
 
