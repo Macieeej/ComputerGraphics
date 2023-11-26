@@ -985,6 +985,22 @@ float getPhongShadingIntensity(RayTriangleIntersection intersection) {
     return intensityOfLighting;
 }
 
+glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refractiveIndex)
+{
+    float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -1.0f, 1.0f);
+    float etai = 1, etat = refractiveIndex;
+    glm::vec3 n = surfaceNormal;
+    if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -surfaceNormal; }
+    float eta = etai / etat;
+    float k = 1 - eta * eta * (1 - cosi * cosi);
+    if (k < 0) {
+        // total internal reflection. There is no refraction in this case
+        return glm::vec3(0, 0, 0);
+    } else {
+        return eta * rayDirection + (eta * cosi - sqrtf(k)) * n;
+    }
+    //return k < 0 ? 0 : eta * rayDirection + (eta * cosi - sqrtf(k)) * n;
+}
 
 void drawRayTracedScene(DrawingWindow &window) {
 
@@ -1015,7 +1031,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                     drawPixelNoShadows(x, y, colour, window);
                 }
                 // Set colour name to colour of object that will be the mirror
-                else if (colour.name == "Blue") {
+                else if (colour.name == "Magentaa") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1027,6 +1043,65 @@ void drawRayTracedScene(DrawingWindow &window) {
                     //drawPixelNoShadows(x, y, colour, window);
                     //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                     drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
+                }
+                //Set colour name to colour of object that will be the glass
+                else if (colour.name == "Blue" && !isSphere) {
+
+                    //bool outside = dot(glm::normalize(rayDir), intersection.intersectedTriangle.normal) < 0;
+
+                    glm::vec3 refractedRayDir = glm::normalize(refract(rayDir, intersection.intersectedTriangle.normal, 1.3));
+
+                    if (refractedRayDir == glm::vec3(0, 0, 0)) {
+                        // total reflection, there is no refraction
+                        std::cout << "reflect" << std::endl;
+                        glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
+                        RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
+                        float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
+
+                        colour.red = intersectionFromMirror.intersectedTriangle.colour.red*intensityOfLighting;
+                        colour.green = intersectionFromMirror.intersectedTriangle.colour.green*intensityOfLighting;
+                        colour.blue = intersectionFromMirror.intersectedTriangle.colour.blue*intensityOfLighting;
+
+                        drawPixelNoShadows(x, y, colour, window);
+                    } else {
+                        bool inside = true;
+                        bool testDraw = false;
+
+                        while (inside) {
+                            RayTriangleIntersection intersectionFromPointOfRefraction = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
+                            glm::vec3 refractedRayDirTemp = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, 1.3));
+
+                            if (refractedRayDirTemp == glm::vec3(0, 0, 0)) {
+                                // total reflection, there is no refraction
+
+                                // change to true later
+                                inside = false;
+                            } else {
+                                refractedRayDir = refractedRayDirTemp;
+                                intersection = intersectionFromPointOfRefraction;
+                                testDraw = true;
+                                inside = false;
+                            }
+                        }
+
+                        if (testDraw) {
+                            RayTriangleIntersection intersectionOutsideGlass = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
+                            float intensityOfLighting = getLightIntensity(intersectionOutsideGlass.intersectionPoint, intersectionOutsideGlass.intersectedTriangle.normal);
+
+                            colour.red = intersectionOutsideGlass.intersectedTriangle.colour.red*intensityOfLighting;
+                            colour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting;
+                            colour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting;
+
+                            drawPixelNoShadows(x, y, colour, window);
+                        }
+
+
+                    }
+
+//                    RayTriangleIntersection intersection1 = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
+//                    uint32_t  pixelColor = (255 << 24) + (int(intersection1.intersectedTriangle.colour.red) << 16) + (int(intersection1.intersectedTriangle.colour.green) << 8) + int(intersection1.intersectedTriangle.colour.blue);
+//                    window.setPixelColour(x, y, pixelColor);
+
                 }
                 else {
                     float intensityOfLighting = getLightIntensity(intersection.intersectionPoint, intersection.intersectedTriangle.normal);
@@ -1280,6 +1355,7 @@ int main(int argc, char *argv[]) {
 
     // Uncomment to draw scene
     draw(window);
+
 
     /*
     // Texture mapping, visual verification
