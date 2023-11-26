@@ -23,6 +23,7 @@
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 2;
 bool isSphere = false;
+bool loadClosedCornellBox = false;
 
 // DO NOT CHANGE THESE
 //!!!!!!!!!!!!!!!!!!!!!!
@@ -37,12 +38,19 @@ std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[WIDTH+1][HEIGHT+1] = {};
 
-//glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
-//glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
-glm::vec3 cameraPosition = glm::vec3(0.0, 0.0, -0.8);
-glm::vec3 initialCameraPosition = glm::vec3(0.0, 0.0, -0.8);
+glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
+glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
 
-glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
+glm::vec3 lookAtGlobal = glm::vec3(0, -0.5, 0);
+float refractiveIndexGlobal = 1.3;
+
+//glm::vec3 cameraPosition = glm::vec3(0.0, -0.9, -0.8);
+//glm::vec3 initialCameraPosition = glm::vec3(0.0, -0.9, -0.8);
+//glm::vec3 cameraPosition = glm::vec3(0.0, 0.0, -0.8);
+//glm::vec3 initialCameraPosition = glm::vec3(0.0, 0.0, -0.8);
+
+glm::vec3 lightSourcePosition = glm::vec3(-0.5,0.5,0.5);
+//glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
 //glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 
 float angleX = 0;
@@ -718,7 +726,13 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
                     }
                 }
             } else {
-                triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
+                if (currentColour.name == "Red") {
+                    glm::vec3 liftSquareByVec = glm::vec3(0, 0.1, 0);
+                    triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1]+liftSquareByVec, vertices[std::stoi(split(strings[2], '/')[0])-1]+liftSquareByVec, vertices[std::stoi(split(strings[3], '/')[0])-1]+liftSquareByVec, currentColour);
+                } else {
+                    triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
+                }
+//                triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
                 if (split(strings[1], '/')[1] != "") {
                     triangle.texturePoints[0] = texturePoints[std::stoi(split(strings[1], '/')[1])-1];
                     triangle.texturePoints[1] = texturePoints[std::stoi(split(strings[2], '/')[1])-1];
@@ -988,6 +1002,30 @@ float getPhongShadingIntensity(RayTriangleIntersection intersection) {
     return intensityOfLighting;
 }
 
+float fresnel(glm::vec3 incidentRay, glm::vec3 surfaceNormal, float indexOfRefraction) {
+    //https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
+    float cosIncidenceAngle = glm::clamp(dot(incidentRay, surfaceNormal), -1.0f, 1.0f);
+    float etaIncident = 1, etaTransmitted = indexOfRefraction;
+    if (cosIncidenceAngle > 0) { std::swap(etaIncident, etaTransmitted); }
+    // Compute sinTransmitted using Snell's law
+    float sinTransmitted = etaIncident / etaTransmitted * sqrtf(std::max(0.f, 1 - cosIncidenceAngle * cosIncidenceAngle));
+    // Total internal reflection
+    if (sinTransmitted >= 1) {
+        float kr = 1;
+        return kr;
+    }
+    else {
+        float cosTransmitted = sqrtf(std::max(0.f, 1 - sinTransmitted * sinTransmitted));
+        cosIncidenceAngle = fabsf(cosIncidenceAngle);
+        float reflectancePerpendicular = ((etaTransmitted * cosIncidenceAngle) - (etaIncident * cosTransmitted)) / ((etaTransmitted * cosIncidenceAngle) + (etaIncident * cosTransmitted));
+        float reflectanceParallel = ((etaIncident * cosIncidenceAngle) - (etaTransmitted * cosTransmitted)) / ((etaIncident * cosIncidenceAngle) + (etaTransmitted * cosTransmitted));
+        float kr = (reflectancePerpendicular * reflectancePerpendicular + reflectanceParallel * reflectanceParallel) / 2;
+        return kr;
+    }
+    // As a consequence of the conservation of energy, the transmittance is given by:
+    // kt = 1 - kr;
+}
+
 glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refractiveIndex) {
     //https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
     float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -1.0f, 1.0f);
@@ -1056,15 +1094,15 @@ void drawRayTracedScene(DrawingWindow &window) {
                     //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 //Set colour name to colour of object that will be the glass
-                else if (colour.name == "Blue" && !isSphere) {
+                else if (colour.name == "Red" && !isSphere) {
 
                     //bool outside = dot(glm::normalize(rayDir), intersection.intersectedTriangle.normal) < 0;
 
-                    glm::vec3 refractedRayDir = glm::normalize(refract(rayDir, intersection.intersectedTriangle.normal, 1.3));
+                    glm::vec3 refractedRayDir = glm::normalize(refract(rayDir, intersection.intersectedTriangle.normal, refractiveIndexGlobal));
 
                     if (refractedRayDir == glm::vec3(0, 0, 0)) {
                         // total reflection, there is no refraction
-                        //std::cout << "reflect1" << std::endl;
+                        std::cout << "reflect1" << std::endl;
                         glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                         RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                         float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1081,11 +1119,18 @@ void drawRayTracedScene(DrawingWindow &window) {
                         int i=0;
 
                         while (inside) {
+                            //float kr = fresnel(refractedRayDir, intersection.intersectedTriangle.normal, refractiveIndexGlobal);
+
                             RayTriangleIntersection intersectionFromPointOfRefraction = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
                             // possibly needs to change the refractiveIndex to 1.0, since we are inside the Glass
-                            glm::vec3 refractedRayDirFromPointOfRefraction = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, 1.3));
+                            glm::vec3 refractedRayDirFromPointOfRefraction = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, refractiveIndexGlobal));
 
-                            if (refractedRayDirFromPointOfRefraction == glm::vec3(0, 0, 0)) {
+                            float dotProduct = glm::dot(glm::normalize(refractedRayDir), intersectionFromPointOfRefraction.intersectedTriangle.normal);
+                            float angleOfIncidence = glm::acos(dotProduct) * 180.0f / M_PI;
+                            float criticalAngle = glm::asin(1.0f / 1.3f) * 180.0f / M_PI;
+
+                            //if (refractedRayDirFromPointOfRefraction == glm::vec3(0, 0, 0)) {
+                            if (angleOfIncidence > criticalAngle) {
                                 // total reflection, there is no refraction
                                 //std::cout << "reflect2" << std::endl;
                                 glm::vec3 vectorOfReflectionInsideGlass = refractedRayDir - 2.0f*(-intersectionFromPointOfRefraction.intersectedTriangle.normal)*glm::dot(refractedRayDir, (-intersectionFromPointOfRefraction.intersectedTriangle.normal));
@@ -1100,6 +1145,12 @@ void drawRayTracedScene(DrawingWindow &window) {
                             }
                             i++;
                             if (i==4) {
+                                if (testDraw) {
+                                    std::cout << "eventually found reflection" << std::endl;
+                                }else {
+                                    std::cout << "didn't find reflection" << std::endl;
+                                }
+
                                 inside = false;
                             }
                         }
@@ -1372,11 +1423,17 @@ int main(int argc, char *argv[]) {
         loadObjFile(window, "sphere.obj");
     } else {
         //loadObjFile(window, "textured-cornell-box.obj");
-        loadObjFile(window, "cornell-box-closed.obj");
+        if (loadClosedCornellBox) {
+            loadObjFile(window, "cornell-box-closed.obj");
+        } else {
+            loadObjFile(window, "cornell-box.obj");
+        }
+
         //loadObjFile(window, "cornell-box.obj");
     }
 
-    lookAt(glm::vec3(0, 0, 0));
+    //lookAt(glm::vec3(0, 0, 0));
+    lookAt(lookAtGlobal);
     // Uncomment to draw scene
     draw(window);
 
