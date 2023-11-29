@@ -739,6 +739,7 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
                     triangle.texturePoints[2] = texturePoints[std::stoi(split(strings[3], '/')[1])-1];
                 }
                 triangle.normal = glm::normalize(glm::cross(triangle.vertices[0]-triangle.vertices[2], triangle.vertices[1]-triangle.vertices[2]));
+
             }
             faces.push_back(triangle);
         }
@@ -1054,6 +1055,7 @@ glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refract
 void drawRayTracedScene(DrawingWindow &window) {
 
     window.clearPixels();
+    int maxNoOfReflectGlobal = 0;
 
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
@@ -1080,7 +1082,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                     drawPixelNoShadows(x, y, colour, window);
                 }
                 // Set colour name to colour of object that will be the mirror
-                else if (colour.name == "Magentaa") {
+                else if (colour.name == "Magenta") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1094,13 +1096,13 @@ void drawRayTracedScene(DrawingWindow &window) {
                     //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 //Set colour name to colour of object that will be the glass
-                else if (colour.name == "Red" && !isSphere) {
+                else if (colour.name == "Blue" && !isSphere) {
 
                     glm::vec3 refractedRayDir = glm::normalize(refract(rayDir, intersection.intersectedTriangle.normal, refractiveIndexGlobal));
 
                     if (refractedRayDir == glm::vec3(0, 0, 0)) {
                         // total reflection, there is no refraction
-                        std::cout << "reflect1" << std::endl;
+                        //std::cout << "reflect1" << std::endl;
                         glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                         RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                         float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1111,6 +1113,7 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                         drawPixelNoShadows(x, y, colour, window);
                     } else {
+                        int maxNumberOfReflections;
                         bool inside = true;
                         bool testDraw = false;
 
@@ -1167,9 +1170,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                                 RayTriangleIntersection intersectionOutsideGlass = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
                                 float intensityOfLighting = getLightIntensity(intersectionOutsideGlass.intersectionPoint, intersectionOutsideGlass.intersectedTriangle.normal);
 
-                                refractionColour.red += intersectionOutsideGlass.intersectedTriangle.colour.red*intensityOfLighting*(1-kr);
-                                refractionColour.green += intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting*(1-kr);
-                                refractionColour.blue += intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting*(1-kr);
+                                refractionColour.red = intersectionOutsideGlass.intersectedTriangle.colour.red*intensityOfLighting*(1-kr);
+                                refractionColour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting*(1-kr);
+                                refractionColour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting*(1-kr);
 
                                 //refractedRayDir = refractedRayDirFromPointOfRefraction;
                                 //refractionColour = intersection.intersectedTriangle.colour;
@@ -1178,12 +1181,18 @@ void drawRayTracedScene(DrawingWindow &window) {
                                 //std::cout << "eventually found refraction at i: " << i << std::endl;
                             }
                             i++;
-                            if (i==16) {
-//                                if (testDraw) {
-//                                    std::cout << "eventually found reflection" << std::endl;
-//                                }else {
-//                                    std::cout << "didn't find reflection" << std::endl;
-//                                }
+
+                            if (i>maxNoOfReflectGlobal) {
+                                maxNoOfReflectGlobal = i;
+                            }
+
+                            maxNumberOfReflections = 16;
+                            if (i==maxNumberOfReflections) {
+                                if (testDraw) {
+                                    //std::cout << "eventually found reflection" << std::endl;
+                                }else {
+                                    std::cout << "didn't find reflection" << std::endl;
+                                }
 
                                 inside = false;
                             }
@@ -1202,9 +1211,9 @@ void drawRayTracedScene(DrawingWindow &window) {
 //                            refractionColour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting;
 //                            refractionColour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting;
 
-                            colour.red = reflectionColour.red/15 + refractionColour.red;
-                            colour.green = reflectionColour.green/15 + refractionColour.green;
-                            colour.blue = reflectionColour.blue/15 + refractionColour.blue;
+                            colour.red = reflectionColour.red/(maxNumberOfReflections-1) + refractionColour.red;
+                            colour.green = reflectionColour.green/(maxNumberOfReflections-1) + refractionColour.green;
+                            colour.blue = reflectionColour.blue/(maxNumberOfReflections-1) + refractionColour.blue;
                             //std::cout << "kr: " << kr << " (1-kr): " << (1-kr) << std::endl;
                             drawPixelNoShadows(x, y, colour, window);
                             //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
@@ -1238,6 +1247,7 @@ void drawRayTracedScene(DrawingWindow &window) {
             }
         }
     }
+    std::cout << "maxNoOfReflectGlobal: " << maxNoOfReflectGlobal << std::endl;
     std::cout << "Scene Drawn" << std::endl;
 }
 
