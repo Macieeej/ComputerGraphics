@@ -16,42 +16,32 @@
 #include "RayTriangleIntersection.h"
 //std::cout << glm::to_string(myVector)
 
-#define WIDTH 320*4
-#define HEIGHT 240*4
+#define WIDTH 320*2
+#define HEIGHT 240*2
 #define IMAGEPLANE 240
 
 // 0 for a wireframe scene, 1 for a rasterised scene, 2 for a raytraced scene
 int renderMode = 2;
 bool isSphere = false;
 bool loadClosedCornellBox = false;
+bool changeToPhong = true;
 
-// DO NOT CHANGE THESE
+// DO NOT CHANGE BELOW THE LINE
 //!!!!!!!!!!!!!!!!!!!!!!
 bool paused = true;
 bool loadSphere = false;
 
 std::map<std::string, std::pair<glm::vec3, int>> vertexNormalsMap;
-
 std::vector<std::vector<uint32_t>> textureArray;
-
 std::map<std::string, Colour> colourPaletteMap;
 std::vector<ModelTriangle> faces;
 float depthsArray[WIDTH+1][HEIGHT+1] = {};
-
 glm::vec3 cameraPosition = glm::vec3(0, 0, 4);
 glm::vec3 initialCameraPosition = glm::vec3(0, 0, 4);
-
-glm::vec3 lookAtGlobal = glm::vec3(0, -0.5, 0);
+glm::vec3 lookAtGlobal = glm::vec3(0, 0, 0);
 float refractiveIndexGlobal = 1.3f;
+glm::vec3 lightSourcePosition = glm::vec3(0.5,0.0,1.2);
 
-//glm::vec3 cameraPosition = glm::vec3(0.0, -0.9, -0.8);
-//glm::vec3 initialCameraPosition = glm::vec3(0.0, -0.9, -0.8);
-//glm::vec3 cameraPosition = glm::vec3(0.0, 0.0, -0.8);
-//glm::vec3 initialCameraPosition = glm::vec3(0.0, 0.0, -0.8);
-
-glm::vec3 lightSourcePosition = glm::vec3(-0.5,0.5,0.5);
-//glm::vec3 lightSourcePosition = glm::vec3(0,0.8,0.5);
-//glm::vec3 lightSourcePosition = glm::vec3(0.5, 1, 1.5);
 
 float angleX = 0;
 float angleY = 0;
@@ -181,69 +171,6 @@ std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 t
     return array;
 }
 
-
-void drawRedNoise(DrawingWindow &window) {
-    window.clearPixels();
-    for (size_t y = 0; y < window.height; y++) {
-        for (size_t x = 0; x < window.width; x++) {
-            float red = rand() % 256;
-            float green = 0.0;
-            float blue = 0.0;
-            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-            window.setPixelColour(x, y, colour);
-        }
-    }
-}
-
-
-void drawGreyScale(DrawingWindow &window) {
-    window.clearPixels();
-    for (size_t y = 0; y < window.height; y++) {
-
-        std::vector<float> result;
-        result = interpolateSingleFloats(255, 0, window.width);
-
-        for (size_t x = 0; x < window.width; x++) {
-            float red = result[x];
-            float green = result[x];
-            float blue = result[x];
-            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-            window.setPixelColour(x, y, colour);
-        }
-    }
-}
-
-
-void draw2DColour(DrawingWindow &window) {
-    window.clearPixels();
-
-    glm::vec3 topLeft(255, 0, 0);        // red
-    glm::vec3 topRight(0, 0, 255);       // blue
-    glm::vec3 bottomRight(0, 255, 0);    // green
-    glm::vec3 bottomLeft(255, 255, 0);   // yellow
-
-    std::vector<glm::vec3> result_r_y;
-    std::vector<glm::vec3> result_b_g;
-
-    result_r_y = interpolateThreeElementValues(glm::vec3(255, 0, 0), glm::vec3(255, 255, 0), window.height);
-    result_b_g = interpolateThreeElementValues(glm::vec3(0, 0, 255), glm::vec3(0, 255, 0), window.height);
-
-    for (size_t y = 0; y < window.height; y++) {
-
-        std::vector<glm::vec3> result_left_right;
-        result_left_right = interpolateThreeElementValues(result_r_y[y], result_b_g[y], window.width);
-
-        for (size_t x = 0; x < window.width; x++) {
-            float red = result_left_right[x][0];
-            float green = result_left_right[x][1];
-            float blue = result_left_right[x][2];
-            uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
-            window.setPixelColour(x, y, colour);
-        }
-    }
-}
-
-
 void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_class) {
 
     bool hasDepth = false;
@@ -274,9 +201,6 @@ void draw2DLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour 
 
     std::vector<TexturePoint> textures;
     if (hasTexture) {
-        //TexturePoint a = TexturePoint(from.texturePoint.x * from.depth, from.texturePoint.y * from.depth);
-        //TexturePoint b = TexturePoint(to.texturePoint.x * to.depth, to.texturePoint.y * to.depth);
-        //textures = interpolate2DPoints(a, b, numberOfSteps+1);
         textures = interpolate2DPoints(from.texturePoint, to.texturePoint, numberOfSteps+1);
     }
 
@@ -538,8 +462,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
             }
         }
     }
-    //drawTriangle(window, triangle, colour_class);
-
 }
 
 
@@ -553,14 +475,6 @@ void loadMapTexture(DrawingWindow &window, std::string textureName) {
             textureArray[i][j] = texture.pixels[i+j*texture.width];
         }
     }
-
-    /*for (int i=0; i<textureArray.size(); i++) {
-        for (int j=0; j<textureArray[i].size(); j++) {
-            window.setPixelColour(floor(i), floor(j), textureArray[i][j]);
-        }
-    }*/
-
-    std::cout << "texture.width: " << texture.width << " texture.height: " << texture.height << std::endl;
 }
 
 
@@ -626,18 +540,7 @@ RayTriangleIntersection getClosestValidIntersection(glm::vec3 rayStartCoord, glm
         glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
         glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
 
-        //glm::vec3 posSolToCoord = triangle.vertices[0] + closestPoint.y * e0 + closestPoint.z * e1;
-
         glm::vec3 posSolToCoord = rayStartCoord + rayDirection * minDistance;
-
-        //posSolToCoord = glm::normalize(posSolToCoord);
-        /*glm::vec3 posSolToCoordCheck = rayStartCoord + rayDirection * minDistance;
-
-        if (posSolToCoord != posSolToCoordCheck) {
-            std::cout << "ERROR: posSolToCoord != posSolToCoordCheck" << std::endl;
-            std::cout << posSolToCoord.x << " " << posSolToCoord.y << " " << posSolToCoord.z << " " << std::endl;
-            std::cout << posSolToCoordCheck.x << " " << posSolToCoordCheck.y << " " << posSolToCoordCheck.z << " " << std::endl;
-        }*/
 
         RayTriangleIntersection intersection = RayTriangleIntersection(posSolToCoord, minDistance, intersectedTriangles[index], indexes[index]);
         return intersection;
@@ -732,7 +635,6 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
                 } else {
                     triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
                 }
-//                triangle = ModelTriangle(vertices[std::stoi(split(strings[1], '/')[0])-1], vertices[std::stoi(split(strings[2], '/')[0])-1], vertices[std::stoi(split(strings[3], '/')[0])-1], currentColour);
                 if (split(strings[1], '/')[1] != "") {
                     triangle.texturePoints[0] = texturePoints[std::stoi(split(strings[1], '/')[1])-1];
                     triangle.texturePoints[1] = texturePoints[std::stoi(split(strings[2], '/')[1])-1];
@@ -758,10 +660,6 @@ void loadObjFile(DrawingWindow &window, std::string fileName) {
         ++it;
     }
 
-    //for (ModelTriangle triangle : faces) {
-    //    std::cout << triangle.colour << std::endl;
-    //    std::cout << triangle << std::endl;
-    //}
 }
 
 
@@ -887,7 +785,7 @@ void drawSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle tr
 void drawPixelSoftShadows(int x, int y, glm::vec3 intersectionPoint, ModelTriangle triangle, glm::vec3 lightSourcePositionVar, Colour colour, DrawingWindow &window) {
 
     float lightWidth = 0.455;
-    int numberOfRays = 5;
+    int numberOfRays = 10;
 
     glm::vec3 lightSourcePositionStart = lightSourcePositionVar - glm::vec3(lightWidth/2, 0, lightWidth/2);
 
@@ -930,19 +828,17 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
     //Proximity lighting
     float distance = glm::length(lightSourcePosition - intersectionPoint);
     float proximity = 5 / (3*M_PI*(distance * distance));
-    //intensityOfLighting = (intensityOfLighting - 0.01)/(3.036-0.01);
 
     //Angle of Incidence lighting
     float angleOfIncidence = glm::dot(normal, glm::normalize(lightSourcePosition - intersectionPoint));
 
     //Specular lighting
     glm::vec3 reflectionVec = glm::normalize(intersectionPoint - lightSourcePosition) - 2.0f*normal*glm::dot(intersectionPoint - lightSourcePosition, normal);
-    float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 255);
+    float specular = pow(glm::dot(glm::normalize(lightSourcePosition - intersectionPoint), glm::normalize(reflectionVec)), 65);
 
-    //Ambient lighting
-    proximity = glm::clamp(proximity, 0.2f, 1.0f);
-    angleOfIncidence = glm::clamp(angleOfIncidence, 0.2f, 1.0f);
-    specular = glm::clamp(specular, 0.2f, 1.0f);
+    proximity = glm::clamp(proximity, 0.0f, 1.0f);
+    angleOfIncidence = glm::clamp(angleOfIncidence, 0.0f, 1.0f);
+    specular = glm::clamp(specular, 0.0f, 1.0f);
 
     // BEST Intensity of lighting
     float intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular)/6;
@@ -952,6 +848,9 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
         intensityOfLighting = (proximity*3 + angleOfIncidence*2 + specular*6)/11;
     }
 
+    //Ambient lighting
+    intensityOfLighting = glm::clamp(intensityOfLighting, 0.2f, 1.0f);
+
     return intensityOfLighting;
 }
 
@@ -959,6 +858,7 @@ float getLightIntensity(glm::vec3 intersectionPoint, glm::vec3 normal) {
 // Compute barycentric coordinates (u, v, w) for
 // point p with respect to triangle (a, b, c)
 glm::vec3 getBarycentricCoordinates(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p) {
+    // Source:
     // https://ceng2.ktu.edu.tr/~cakir/files/grafikler/Texture_Mapping.pdf
     // https://www.sciencedirect.com/book/9781558607323/real-time-collision-detection#book-info
     glm::vec3 v0 = b - a, v1 = c - a, v2 = p - a;
@@ -1004,7 +904,8 @@ float getPhongShadingIntensity(RayTriangleIntersection intersection) {
 }
 
 float fresnel(glm::vec3 incidentRay, glm::vec3 surfaceNormal, float indexOfRefraction) {
-    //https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
+    // Source:
+    // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
     float cosIncidenceAngle = glm::clamp(dot(incidentRay, surfaceNormal), -1.0f, 1.0f);
     float etaIncident = 1, etaTransmitted = indexOfRefraction;
     if (cosIncidenceAngle > 0) { std::swap(etaIncident, etaTransmitted); }
@@ -1023,14 +924,13 @@ float fresnel(glm::vec3 incidentRay, glm::vec3 surfaceNormal, float indexOfRefra
         float kr = (reflectancePerpendicular * reflectancePerpendicular + reflectanceParallel * reflectanceParallel) / 2;
         return kr;
     }
-    // As a consequence of the conservation of energy, the transmittance is given by:
-    // kt = 1 - kr;
 }
 
 glm::vec3 refract(glm::vec3 rayDirection, glm::vec3 surfaceNormal, float refractiveIndex) {
-    //https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
+    // Source:
+    // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
+
     float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -1.0f, 1.0f);
-//    float cosi = glm::clamp(dot(rayDirection, surfaceNormal), -0.99f, 0.99f);
     float etai = 1;
     float etat = refractiveIndex;
     glm::vec3 n = surfaceNormal;
@@ -1071,9 +971,14 @@ void drawRayTracedScene(DrawingWindow &window) {
                 Colour colour = intersection.intersectedTriangle.colour;
 
                 if (colour.name == "Red" && isSphere) {
+                    float intensityOfLighting;
 
-                    //float intensityOfLighting = getGouraudShadingIntensity(intersection);
-                    float intensityOfLighting = getPhongShadingIntensity(intersection);
+                    if (changeToPhong) {
+                        intensityOfLighting = getPhongShadingIntensity(intersection);
+                    } else {
+                        intensityOfLighting = getGouraudShadingIntensity(intersection);
+                    }
+
 
                     colour.red = colour.red*intensityOfLighting;
                     colour.green = colour.green*intensityOfLighting;
@@ -1082,7 +987,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                     drawPixelNoShadows(x, y, colour, window);
                 }
                 // Set colour name to colour of object that will be the mirror
-                else if (colour.name == "Magenta") {
+                else if (colour.name == "Yelloww") {
                     glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                     RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                     float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1096,13 +1001,12 @@ void drawRayTracedScene(DrawingWindow &window) {
                     //drawPixelSoftShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
                 }
                 //Set colour name to colour of object that will be the glass
-                else if (colour.name == "Blue" && !isSphere) {
+                else if (colour.name == "Redd" && !isSphere) {
 
                     glm::vec3 refractedRayDir = glm::normalize(refract(rayDir, intersection.intersectedTriangle.normal, refractiveIndexGlobal));
 
                     if (refractedRayDir == glm::vec3(0, 0, 0)) {
                         // total reflection, there is no refraction
-                        //std::cout << "reflect1" << std::endl;
                         glm::vec3 vectorOfReflection = rayDir - 2.0f*intersection.intersectedTriangle.normal*glm::dot(rayDir, intersection.intersectedTriangle.normal);
                         RayTriangleIntersection intersectionFromMirror = getClosestValidIntersection(intersection.intersectionPoint, vectorOfReflection, intersection.intersectedTriangle, false);
                         float intensityOfLighting = getLightIntensity(intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle.normal);
@@ -1115,7 +1019,6 @@ void drawRayTracedScene(DrawingWindow &window) {
                     } else {
                         int maxNumberOfReflections;
                         bool inside = true;
-                        bool testDraw = false;
 
                         int i=0;
 
@@ -1127,24 +1030,17 @@ void drawRayTracedScene(DrawingWindow &window) {
                             kr = fresnel(refractedRayDir, intersection.intersectedTriangle.normal, refractiveIndexGlobal);
 
                             RayTriangleIntersection intersectionFromPointOfRefraction = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
-                            // possibly needs to change the refractiveIndex to 1.0, since we are inside the Glass
                             glm::vec3 refractedRayDirFromPointOfRefraction = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, refractiveIndexGlobal));
 
                             float dotProduct = glm::dot(glm::normalize(refractedRayDir), intersectionFromPointOfRefraction.intersectedTriangle.normal);
                             float angleOfIncidence = glm::acos(dotProduct) * 180.0f / M_PI;
                             float criticalAngle = glm::asin(1.0f / refractiveIndexGlobal) * 180.0f / M_PI;
 
-                            //if (refractedRayDirFromPointOfRefraction == glm::vec3(0, 0, 0)) {
-                            //if (kr < 1) {
                             if (angleOfIncidence > criticalAngle) {
                                 // total reflection, there is no refraction, but since it is inside the cube, we get the colour of refraction, so we can scale it later
-                                //std::cout << "reflect2" << std::endl;
-
-
 
                                 glm::vec3 vectorOfReflectionInsideGlass = refractedRayDir - 2.0f*(-intersectionFromPointOfRefraction.intersectedTriangle.normal)*glm::dot(refractedRayDir, (-intersectionFromPointOfRefraction.intersectedTriangle.normal));
 
-                                //intersection = getClosestValidIntersection(intersectionFromPointOfRefraction.intersectionPoint, vectorOfReflectionInsideGlass, intersectionFromPointOfRefraction.intersectedTriangle, false);
                                 intersection = intersectionFromPointOfRefraction;
 
                                 RayTriangleIntersection intersectionOutsideGlass = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
@@ -1154,15 +1050,10 @@ void drawRayTracedScene(DrawingWindow &window) {
                                 reflectionColour.green += intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting*kr;
                                 reflectionColour.blue += intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting*kr;
 
-                                //reflectionColour = Colour(255, 255, 255);
-
                                 refractedRayDir = vectorOfReflectionInsideGlass;
 
                             } else {
 
-                                if (angleOfIncidence == criticalAngle) {
-                                    std::cout << "crit" << std::endl;
-                                }
                                 intersection = intersectionFromPointOfRefraction;
 
                                 refractedRayDir = glm::normalize(refract(refractedRayDir, intersectionFromPointOfRefraction.intersectedTriangle.normal, refractiveIndexGlobal));
@@ -1174,11 +1065,7 @@ void drawRayTracedScene(DrawingWindow &window) {
                                 refractionColour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting*(1-kr);
                                 refractionColour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting*(1-kr);
 
-                                //refractedRayDir = refractedRayDirFromPointOfRefraction;
-                                //refractionColour = intersection.intersectedTriangle.colour;
-                                testDraw = true;
                                 inside = false;
-                                //std::cout << "eventually found refraction at i: " << i << std::endl;
                             }
                             i++;
 
@@ -1188,44 +1075,17 @@ void drawRayTracedScene(DrawingWindow &window) {
 
                             maxNumberOfReflections = 16;
                             if (i==maxNumberOfReflections) {
-                                if (testDraw) {
-                                    //std::cout << "eventually found reflection" << std::endl;
-                                }else {
-                                    std::cout << "didn't find reflection" << std::endl;
-                                }
-
                                 inside = false;
                             }
                         }
 
-                        testDraw = true;
+                        colour.red = reflectionColour.red/(maxNumberOfReflections-1) + refractionColour.red;
+                        colour.green = reflectionColour.green/(maxNumberOfReflections-1) + refractionColour.green;
+                        colour.blue = reflectionColour.blue/(maxNumberOfReflections-1) + refractionColour.blue;
 
-                        if (testDraw) {
-                            //RayTriangleIntersection intersectionOutsideGlass = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
-                            //float intensityOfLighting = getLightIntensity(intersectionOutsideGlass.intersectionPoint, intersectionOutsideGlass.intersectedTriangle.normal);
-
-//                            colour.red = intersectionOutsideGlass.intersectedTriangle.colour.red*intensityOfLighting;
-//                            colour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting;
-//                            colour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting;
-//                            refractionColour.red = intersectionOutsideGlass.intersectedTriangle.colour.red*intensityOfLighting;
-//                            refractionColour.green = intersectionOutsideGlass.intersectedTriangle.colour.green*intensityOfLighting;
-//                            refractionColour.blue = intersectionOutsideGlass.intersectedTriangle.colour.blue*intensityOfLighting;
-
-                            colour.red = reflectionColour.red/(maxNumberOfReflections-1) + refractionColour.red;
-                            colour.green = reflectionColour.green/(maxNumberOfReflections-1) + refractionColour.green;
-                            colour.blue = reflectionColour.blue/(maxNumberOfReflections-1) + refractionColour.blue;
-                            //std::cout << "kr: " << kr << " (1-kr): " << (1-kr) << std::endl;
-                            drawPixelNoShadows(x, y, colour, window);
-                            //drawPixelHardShadows(x, y, intersectionFromMirror.intersectionPoint, intersectionFromMirror.intersectedTriangle, lightSourcePosition, colour, window);
-                            //drawPixelSoftShadows(x, y, intersectionOutsideGlass.intersectionPoint, intersectionOutsideGlass.intersectedTriangle, lightSourcePosition, colour, window);
-                        }
-
+                        drawPixelNoShadows(x, y, colour, window);
 
                     }
-
-//                    RayTriangleIntersection intersection1 = getClosestValidIntersection(intersection.intersectionPoint, refractedRayDir, intersection.intersectedTriangle, false);
-//                    uint32_t  pixelColor = (255 << 24) + (int(intersection1.intersectedTriangle.colour.red) << 16) + (int(intersection1.intersectedTriangle.colour.green) << 8) + int(intersection1.intersectedTriangle.colour.blue);
-//                    window.setPixelColour(x, y, pixelColor);
 
                 }
                 else {
@@ -1240,14 +1100,9 @@ void drawRayTracedScene(DrawingWindow &window) {
                     //drawPixelSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
                 }
 
-                // draw shadows
-                //drawHardShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-                //drawSoftShadows(x, y, intersection.intersectionPoint, intersection.intersectedTriangle, lightSourcePosition, colour, window);
-
             }
         }
     }
-    std::cout << "maxNoOfReflectGlobal: " << maxNoOfReflectGlobal << std::endl;
     std::cout << "Scene Drawn" << std::endl;
 }
 
@@ -1264,15 +1119,16 @@ void draw(DrawingWindow &window) {
 }
 
 
-float cameraSpeed = M_PI/36; // Adjust the speed of the orbit as needed
+float cameraSpeed = M_PI/24; // Adjust the speed of the orbit as needed
 float cameraAngle = 0;  // Initial angle
 
 void orbit(DrawingWindow &window, SDL_Event &event) {
 
     if (cameraAngle >= 2*M_PI){
-        std::cout << "FULL CIRCLE" << std::endl;
-        // Reset to 0 when it gets to 2pi (otherwise it'll just get bigger and bigger)
+
+        // Reset to 0 when it gets to 2pi
         cameraAngle = 0;
+        paused = true;
     } else {
         cameraAngle = cameraAngle + cameraSpeed;
         positionY = glm::mat3(
@@ -1285,6 +1141,7 @@ void orbit(DrawingWindow &window, SDL_Event &event) {
 
     lookAt(glm::vec3(0, 0, 0));
     draw(window);
+
 }
 
 
@@ -1412,6 +1269,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "e" << std::endl;
 
             cameraPosition[2]-=1;
+
             draw(window);
         }
         else if (event.key.keysym.sym == SDLK_u) {
@@ -1432,7 +1290,6 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             CanvasPoint p3 = CanvasPoint(rand()%WIDTH+1, rand()%HEIGHT+1);
             Colour colour = Colour(rand()%256, rand()%256, rand()%256);
             drawFilledTriangle(window, CanvasTriangle(p1, p2, p3), colour);
-            std::cout << "drawn" << std::endl;
 
         } else if (event.key.keysym.sym == SDLK_l) {
             std::cout << "l" << std::endl;
@@ -1447,7 +1304,6 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
             std::cout << "p" << std::endl;
 
             if (paused) {
-                //initialCameraPosition = cameraPosition;
                 paused = false;
             } else {
                 paused = true;
@@ -1459,6 +1315,19 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
     }
 }
 
+void drawAnimate(DrawingWindow &window) {
+    window.clearPixels();
+
+
+    cameraPosition[0]-=0.05;
+    cameraPosition[1]+=0.05;
+
+    cameraPosition[2]-=0.25;
+
+    draw(window);
+    lookAtGlobal = lookAtGlobal + glm::vec3(-0.05, 0.025, 0.25);
+    lookAt(lookAtGlobal);
+}
 
 int main(int argc, char *argv[]) {
     DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
@@ -1467,51 +1336,47 @@ int main(int argc, char *argv[]) {
     if (isSphere) {
         cameraPosition = glm::vec3(0, 0, 4);
         initialCameraPosition = cameraPosition;
-        //lightSourcePosition = glm::vec3(0,1,1);
 
-        // uncomment for sphere in a cornell box
+        // Sphere in a cornell box
         loadObjFile(window, "cornell-box-no-red-box.obj");
 
         loadSphere = true;
         loadObjFile(window, "sphere.obj");
     } else {
-        //loadObjFile(window, "textured-cornell-box.obj");
         if (loadClosedCornellBox) {
             loadObjFile(window, "cornell-box-closed.obj");
         } else {
             loadObjFile(window, "cornell-box.obj");
         }
-
-        //loadObjFile(window, "cornell-box.obj");
     }
 
-    //lookAt(glm::vec3(0, 0, 0));
     lookAt(lookAtGlobal);
-    // Uncomment to draw scene
     draw(window);
 
-
-    /*
-    // Texture mapping, visual verification
-    Colour white = Colour(255, 255, 255);
-    loadMapTexture(window);
-
-    CanvasPoint p1 = CanvasPoint(160, 10);
-    p1.texturePoint = TexturePoint(195, 5);
-    CanvasPoint p2 = CanvasPoint(300, 230);
-    p2.texturePoint = TexturePoint(395, 380);
-    CanvasPoint p3 = CanvasPoint(10, 150);
-    p3.texturePoint = TexturePoint(65, 330);
-
-    CanvasTriangle triangle = CanvasTriangle(p1, p2, p3);
-    drawFilledTriangle(window, triangle, white);
-    */
-
+    int i = 0;
     while (true) {
         // We MUST poll for events - otherwise the window will freeze !
         if (window.pollForInputEvents(event)) handleEvent(event, window);
+
         if (!paused) {
             orbit(window, event);
+
+//            drawAnimate(window);
+//            i++;
+//            window.renderFrame();
+//            std::string ppmName = "frames/a" + std::to_string(118-i) + ".ppm";
+//            std::string bmpName = "frames/a" + std::to_string(118-i) + ".bmp";
+//            window.savePPM(ppmName);
+//            window.saveBMP(bmpName);
+//            i++;
+//            std::string ppmNamee = "frames/a" + std::to_string(118-i) + ".ppm";
+//            std::string bmpNamee = "frames/a" + std::to_string(118-i) + ".bmp";
+//            window.savePPM(ppmNamee);
+//            window.saveBMP(bmpNamee);
+//            orbitCount++;
+//            if (i==16) {
+//                paused = true;
+//            }
         }
 
         window.renderFrame();
